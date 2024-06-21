@@ -4,11 +4,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include "functions.h"
 
 
 int main(int argc, char *argv[]){
-    int f = 3, i = 1;
+    int f = 3, i = 1, W = 1;
     float u = 0.5, p = 1.3, v = 0.5;
     char *C = NULL , *R = NULL, *N = NULL; //Los prametros -C y -R son obligatorios
     
@@ -16,7 +17,7 @@ int main(int argc, char *argv[]){
     int option;
 
     //Lectura de argumentos usando getopt()
-    while((option = getopt(argc, argv, "N:f:p:u:v:C:R:l")) != -1) { //l simplemente es un parche para que pueda leer R
+    while((option = getopt(argc, argv, "N:f:p:u:v:W:C:R:l")) != -1) { //l simplemente es un parche para que pueda leer R
         switch (option)
         {
         case 'N':
@@ -34,6 +35,8 @@ int main(int argc, char *argv[]){
         case 'v':
             v = atof(optarg); //-v: UMBRAL para clasificación.
             break;
+        case 'W':
+            W = atoi(optarg); //• -W: Cantidad de workers a crear.
         case 'C':
             C = optarg; //-C: nombre de la carpeta resultante con las imágenes, con los filtros aplicados.
             break;
@@ -51,6 +54,11 @@ int main(int argc, char *argv[]){
     //Verificar que se entregan los argumentos olbigatorios
     if (R == NULL && C == NULL){
         printf("Falto el ingreso de parametros obligatorios, nombre de la carpeta resultante o nombre del archivo CSV\n");
+        return 0;
+    }
+
+    if(W <= 0) {
+        printf("Por favor ingrese un valor entero para W\n");
         return 0;
     }
 
@@ -73,6 +81,26 @@ int main(int argc, char *argv[]){
 
     //Archivo CSV con 2 columnas
     fprintf(fileCSV, "Nombre Imagen,Clasificacion\n");
+    
+
+    
+    //---------Uso de fork()--------------
+    pid_t pid = fork();
+    if(pid == 0) {
+        char stringW[10];
+        snprintf(stringW, sizeof(stringW), "%d", W); 
+        //Usar broker
+        //execlp("./broker", "./broker", N, f, p, u, v, W, C, R, (char *)NULL);
+        execlp("./broker", "./broker", argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], (char *)NULL);
+    } else if (pid > 0) {
+        wait(); //Proceso padre espera al proceso hijo
+    } else {
+        printf("Error al crear proceso hijo");
+    }
+    
+    
+    
+
 
     //Variables para concatenacion de cadenas de caracteres
     char bmp[20] = ".bmp";
