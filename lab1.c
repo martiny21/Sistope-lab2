@@ -12,6 +12,8 @@ int main(int argc, char *argv[]){
     int f = 3, i = 1, W = 1;
     float u = 0.5, p = 1.3, v = 0.5;
     char *C = NULL , *R = NULL, *N = NULL; //Los prametros -C y -R son obligatorios
+
+    char *filters = NULL, *U_Saturation = NULL, *U_Binarize = NULL, *U_Clasification = NULL, *workers = NULL; 
     
     int loop = 1;   //Verdadero, es una bandera para continuar un ciclo
     int option;
@@ -24,18 +26,23 @@ int main(int argc, char *argv[]){
             N = optarg; //-N: nombre del prefijo de las imágenes.
             break;
         case 'f':
+            filters = optarg;
             f = atoi(optarg); //-f: cantidad de filtros a aplicar.
             break;
         case 'p':
+            U_Saturation = optarg;
             p = atof(optarg); //-p: factor de saturación del filtro.
             break;
         case 'u':
+            U_Binarize = optarg;
             u = atof(optarg); //-u: UMBRAL para binarizar la imagen.
             break;
         case 'v':
+            U_Clasification = optarg;
             v = atof(optarg); //-v: UMBRAL para clasificación.
             break;
         case 'W':
+            workers = optarg;
             W = atoi(optarg); //• -W: Cantidad de workers a crear.
         case 'C':
             C = optarg; //-C: nombre de la carpeta resultante con las imágenes, con los filtros aplicados.
@@ -87,19 +94,18 @@ int main(int argc, char *argv[]){
     //---------Uso de fork()--------------
     pid_t pid = fork();
     if(pid == 0) {
-        char stringW[10];
-        snprintf(stringW, sizeof(stringW), "%d", W); 
         //Usar broker
-        //execlp("./broker", "./broker", N, f, p, u, v, W, C, R, (char *)NULL);
-        execlp("./broker", "./broker", argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], (char *)NULL);
-    } else if (pid > 0) {
-        wait(); //Proceso padre espera al proceso hijo
+        //execv("./broker", "./broker", N, f, p, u, v, W, C, R, (char *)NULL);
+        execv("./broker", "./broker", N, filters, U_Saturation, U_Binarize, U_Clasification, workers, C, R,  (char *)NULL));
     } else {
-        printf("Error al crear proceso hijo");
+        wait(NULL); //Proceso padre espera al proceso hijo
     }
     
     
-    
+
+
+
+
 
 
     //Variables para concatenacion de cadenas de caracteres
