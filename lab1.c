@@ -7,6 +7,16 @@
 #include <sys/wait.h>
 #include "functions.h"
 
+    /*
+    -f: cantidad de filtros a aplicar.
+    -p: factor de saturación del filtro.
+    -u: UMBRAL para binarizar la imagen.
+    -v: UMBRAL para clasificación.
+    -W: Cantidad de workers a crear.
+    -C: nombre de la carpeta resultante con las imágenes, con los filtros aplicados.
+    -R: nombre del archivo CSV con las clasificaciones resultantes.
+
+    */
 
 int main(int argc, char *argv[]){
     int f = 3, i = 1, W = 1;
@@ -95,8 +105,9 @@ int main(int argc, char *argv[]){
     pid_t pid = fork();
     if(pid == 0) {
         //Usar broker
-        //execv("./broker", "./broker", N, f, p, u, v, W, C, R, (char *)NULL);
         execv("./broker", "./broker", N, filters, U_Saturation, U_Binarize, U_Clasification, workers, C, R,  (char *)NULL));
+        printf("Error al ejecutar broker.\n");
+        return 0;
     } else {
         wait(NULL); //Proceso padre espera al proceso hijo
     }
