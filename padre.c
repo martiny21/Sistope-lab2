@@ -20,7 +20,7 @@ int main(int argc, char *argv[]){
             char *Prefix = optarg;
             if(strlen(Prefix) >= 50 )   
             {
-                char *temp = (char *)realloc(N, (strlen(Prefix + 1) * sizeof(char)); // +1 para el carácter nulo
+                char *temp = (char *)realloc(N, (strlen(Prefix + 1) * sizeof(char))); // +1 para el carácter nulo
                 if (temp == NULL) {
                     printf("Error en la reasignacion de memoria\n");
                     free(N);                                        // Liberar la memoria anterior si realloc falla
@@ -28,8 +28,10 @@ int main(int argc, char *argv[]){
                     free(R);
                     return 1;
                 }
+                N = temp;  
+            } else {
+                strcpy(N, Prefix); // Asignar el puntero realocado a la variable original
             }
-            N = temp;                                               // Asignar el puntero realocado a la variable original
             break;
         case 'f':
             f = atoi(optarg); //-f: cantidad de filtros a aplicar.
@@ -71,6 +73,37 @@ int main(int argc, char *argv[]){
     if(W <= 0) {
         printf("Por favor ingrese un valor entero mayor que 0 para W\n");
         return 0;
+    }
+
+    //Creacion de carpeta
+    char *carpeta = C;
+    if (mkdir(carpeta,0777) == 0) {
+        printf("La carpeta se creó correctamente.\n");
+    } else {
+        printf("Error al crear la carpeta.\n");
+    }
+
+    //Creacion archivo CSV
+    FILE *fileCSV;
+    fileCSV = fopen(R, "w"); // Abre el archivo en modo escritura ("w"), se cierra al finalizar el programa
+
+    if (fileCSV == NULL) {
+        printf("Error al abrir el archivo.");
+        return 0;
+    }
+
+    //Archivo CSV con 2 columnas
+    fprintf(fileCSV, "Nombre Imagen,Clasificacion\n");
+
+    const char *argv2[] = {"./broker", N, f, p, u, v, W, C, R, NULL};
+
+    pid_t pid = fork();
+    if(pid == 0) {
+        //Usar broker
+        //execv("./broker", "./broker", N, f, p, u, v, W, C, R, (char *)NULL);
+        execv("./broker", argv2);
+    } else {
+        wait(NULL); //Proceso padre espera al proceso hijo
     }
 
     free(N);
