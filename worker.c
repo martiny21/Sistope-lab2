@@ -8,6 +8,7 @@
 int main(int argc, char *argv[]){
     char buffer[100];
 
+    printf("Hola. Soy un worker\n");
     /*
     Leer nombre de imagen para luego aplicar los filtros
     -->Usar fgets para esto

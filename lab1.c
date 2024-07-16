@@ -54,6 +54,7 @@ int main(int argc, char *argv[]){
         case 'W':
             workers = optarg;
             W = atoi(optarg); //• -W: Cantidad de workers a crear.
+            break;
         case 'C':
             C = optarg; //-C: nombre de la carpeta resultante con las imágenes, con los filtros aplicados.
             break;
@@ -109,7 +110,14 @@ int main(int argc, char *argv[]){
         printf("Error al ejecutar broker.\n");
         return 0;
     } else {
-        wait(NULL); //Proceso padre espera al proceso hijo
+        pid_t childPid = wait(NULL); //Proceso padre espera al proceso hijo
+
+        if (childPid == -1) {
+            perror("wait");
+            exit(EXIT_FAILURE);
+        }
+
+        printf("Proceso hijo %d terminó\n", childPid);
     }
     
     

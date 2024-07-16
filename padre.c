@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <getopt.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include "functions.h"
 
 int main(int argc, char *argv[]){
     int f = 3, W = 1;                       //f: cantidad de fitros(3), W: workers(1)
@@ -9,6 +13,7 @@ int main(int argc, char *argv[]){
     char *C = (char *)malloc(100 * sizeof(char));   //Nombre carpeta resultante. Parametro obligatorio
     char *R = (char *)malloc(100 * sizeof(char));   //Nombre archivo CSV. Parametro obligatorio
     char *N = (char *)malloc(50 * sizeof(char));   //Nombre prefijo imagenes(Imagen)
+    char fStr[20],WStr[20],uStr[20],pStr[20],vStr[20]; //Strings para convertir los valores a string
 
     int option;
 
@@ -47,6 +52,7 @@ int main(int argc, char *argv[]){
             break;
         case 'W':
             W = atoi(optarg); //• -W: Cantidad de workers a crear.
+            break;
         case 'C':
             C = optarg; //-C: nombre de la carpeta resultante con las imágenes, con los filtros aplicados.
             break;
@@ -56,8 +62,12 @@ int main(int argc, char *argv[]){
         }
     }
 
-    
-
+    // --------- Datos para debugear ------------
+    /*
+    strcpy(N, "img"); 
+    strcpy(C, "testC"); //Nombre de la carpeta resultante
+    strcpy(R, "testR"); //Nombre del archivo CSV
+    */
     //Verificar que f sea un valor valido
     if((f > 3) || f < 0){
         printf("Por favor ingrese un valor entero para f entre 1 y 3\n");
@@ -65,7 +75,7 @@ int main(int argc, char *argv[]){
     }
 
     //Verificar que se entregan los argumentos olbigatorios
-    if (R == NULL && C == NULL){
+    if (strlen(R) == 0 && strlen(C) == 0){
         printf("Falto el ingreso de parametros obligatorios, nombre de la carpeta resultante o nombre del archivo CSV\n");
         return 0;
     }
@@ -88,26 +98,40 @@ int main(int argc, char *argv[]){
     fileCSV = fopen(R, "w"); // Abre el archivo en modo escritura ("w"), se cierra al finalizar el programa
 
     if (fileCSV == NULL) {
-        printf("Error al abrir el archivo.");
+        printf("Error al abrir el archivo.\n");
         return 0;
     }
 
     //Archivo CSV con 2 columnas
     fprintf(fileCSV, "Nombre Imagen,Clasificacion\n");
-
-    const char *argv2[] = {"./broker", N, f, p, u, v, W, C, R, NULL};
+    sprintf(fStr,"%d",f);
+    sprintf(WStr,"%d",W);
+    sprintf(uStr,"%.2f",u);
+    sprintf(pStr,"%.2f",p);
+    sprintf(vStr,"%.2f",v);
+    const char *argv2[] = {"./broker", N, fStr, pStr, uStr, vStr, WStr, C, R, (char *)NULL};
 
     pid_t pid = fork();
     if(pid == 0) {
         //Usar broker
         //execv("./broker", "./broker", N, f, p, u, v, W, C, R, (char *)NULL);
-        execv("./broker", argv2);
+        execv("./broker", (char * const *)argv2);
+        printf("Error al ejecutar el programa broker\n");
+        return 0;
     } else {
-        wait(NULL); //Proceso padre espera al proceso hijo
+        pid_t childPid = wait(NULL); //Proceso padre espera al proceso hijo
+
+        if (childPid == -1) {
+            perror("wait");
+            exit(EXIT_FAILURE);
+        }
+
+        printf("Proceso hijo %d terminó\n", childPid);
     }
 
-    free(N);
-    free(C);
-    free(R);
+    //free(N);
+    fclose(fileCSV);
+
+    printf("Proceso padre terminó\n");
     return 0;
 }
