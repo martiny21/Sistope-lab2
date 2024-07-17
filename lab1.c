@@ -106,7 +106,7 @@ int main(int argc, char *argv[]){
     pid_t pid = fork();
     if(pid == 0) {
         //Usar broker
-        execv("./broker", "./broker", N, filters, U_Saturation, U_Binarize, U_Clasification, workers, C, R,  (char *)NULL));
+        //execv("./broker", "./broker", N, filters, U_Saturation, U_Binarize, U_Clasification, workers, C, R,  (char *)NULL));
         printf("Error al ejecutar broker.\n");
         return 0;
     } else {
