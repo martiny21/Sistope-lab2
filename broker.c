@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     int f = atoi(argv[2]), W = atoi(argv[6]);
     float u = atof(argv[4]), p = atof(argv[3]), v = atof(argv[5]);
     char *N = argv[1], *C = argv[7], *R = argv[8];
-
+    //Falta verificacion de argumentos y alojamiento de memoria me encargo de eso, es para recordar -Martin
     int loop = 1; // Verdadero, es una bandera para continuar un ciclo
 
     printf("Hola. Soy un broker\n");
@@ -55,12 +55,13 @@ int main(int argc, char *argv[])
             dup2(pipes2[i][1], STDOUT_FILENO);
 
             execv("./worker", argv); // Ejecutar worker
+            //Falta verificacion por si falla el execv, me encargo de eso -Martin
             exit(1);
         }
         else if (pid > 0)
         {
             close(pipes2[i][0]); // Cerrar el extremo de lectura en el broker
-            close(pipes1[i][1]);
+            close(pipes1[i][1]); // Cerrar el extremo de escritura en el broker
         }
         else
         {

@@ -15,6 +15,14 @@ int main(int argc, char *argv[]){
     char *N = (char *)malloc(50 * sizeof(char));   //Nombre prefijo imagenes(Imagen)
     char fStr[20],WStr[20],uStr[20],pStr[20],vStr[20]; //Strings para convertir los valores a string
 
+    if (N == NULL || C == NULL || R == NULL) {
+        printf("Error en la asignacion de memoria\n");
+        free(N);
+        free(C);
+        free(R);
+        return 1;
+    }
+
     int option;
 
     //Lectura de argumentos usando getopt()
@@ -54,10 +62,38 @@ int main(int argc, char *argv[]){
             W = atoi(optarg); //• -W: Cantidad de workers a crear.
             break;
         case 'C':
-            C = optarg; //-C: nombre de la carpeta resultante con las imágenes, con los filtros aplicados.
+            if(strlen(optarg) >= 100 )   
+            {
+                char *temp3 = (char *)realloc(C, (strlen(optarg + 1) * sizeof(char))); // +1 para el carácter nulo
+                if (temp3 == NULL) {
+                    printf("Error en la reasignacion de memoria\n");
+                    free(N);                                        // Liberar la memoria anterior si realloc falla
+                    free(C);
+                    free(R);
+                    return 1;
+                }
+                C = temp3;  
+            } else {
+                strcpy(C, optarg); // Asignar el puntero realocado a la variable original
+            }
             break;
         case 'R':
-            R = optarg; //-R: nombre del archivo CSV con las clasificaciones resultantes.
+            if(strlen(optarg) >= 100 )   
+            {
+                char *temp2 = (char *)realloc(R, (strlen(optarg + 1) * sizeof(char))); // +1 para el carácter nulo
+                if (temp2 == NULL) {
+                    printf("Error en la reasignacion de memoria\n");
+                    free(N);                                        // Liberar la memoria anterior si realloc falla
+                    free(C);
+                    free(R);
+                    return 1;
+                }
+                N = temp2;  
+            } else {
+                strcpy(R, optarg); // Asignar el puntero realocado a la variable original
+            }
+            printf("R: %s\n", R);
+            break;
             break;
         }
     }
@@ -85,7 +121,7 @@ int main(int argc, char *argv[]){
         return 0;
     }
 
-    //Creacion de carpeta
+    //Creacion de carpeta       Quizas podria ser una funcion aparte
     char *carpeta = C;
     if (mkdir(carpeta,0777) == 0) {
         printf("La carpeta se creó correctamente.\n");
@@ -104,20 +140,26 @@ int main(int argc, char *argv[]){
 
     //Archivo CSV con 2 columnas
     fprintf(fileCSV, "Nombre Imagen,Clasificacion\n");
+
     sprintf(fStr,"%d",f);
     sprintf(WStr,"%d",W);
     sprintf(uStr,"%.2f",u);
     sprintf(pStr,"%.2f",p);
     sprintf(vStr,"%.2f",v);
+    //Todo esto es para convertir los valores a string y podria hacerse en una funcion aparte
+    
     const char *argv2[] = {"./broker", N, fStr, pStr, uStr, vStr, WStr, C, R, (char *)NULL};
+
+    
+    
 
     pid_t pid = fork();
     if(pid == 0) {
-        //Usar broker
-        //execv("./broker", "./broker", N, f, p, u, v, W, C, R, (char *)NULL);
-        execv("./broker", (char * const *)argv2);
-        printf("Error al ejecutar el programa broker\n");
-        return 0;
+        // Intentar usar broker
+        if(execv("./broker", (char * const *)argv2) == -1) {
+            perror("execv falló");
+            exit(EXIT_FAILURE); // Termina el proceso hijo si execv falla
+        }
     } else {
         pid_t childPid = wait(NULL); //Proceso padre espera al proceso hijo
 
@@ -129,9 +171,21 @@ int main(int argc, char *argv[]){
         printf("Proceso hijo %d terminó\n", childPid);
     }
 
-    //free(N);
-    fclose(fileCSV);
+    if (N != NULL) {
+        free(N);
+        N = NULL; // Evita el uso de punteros colgantes
+    }
+    if (R != NULL) {
+        free(R);
+        R = NULL; // Evita el uso de punteros colgantes
+    }
+    if (C != NULL) {
+        free(C);
+        C = NULL; // Evita el uso de punteros colgantes
+    }
+    
 
+    fclose(fileCSV);
     printf("Proceso padre terminó\n");
     return 0;
 }
