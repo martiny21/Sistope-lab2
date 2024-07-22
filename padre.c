@@ -148,7 +148,7 @@ int main(int argc, char *argv[]){
     sprintf(vStr,"%.2f",v);
     //Todo esto es para convertir los valores a string y podria hacerse en una funcion aparte
     
-    const char *argv2[] = {"./broker", N, fStr, pStr, uStr, vStr, WStr, C, R, (char *)NULL};
+    const char *argv2[] = {"./broker", N, fStr, pStr, uStr, vStr, WStr, (char *)NULL};
 
     
     
