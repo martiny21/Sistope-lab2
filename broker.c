@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 
     printf("Hola. Soy un broker\n");
 
-    // Crear pipes (Comunicacion bidereccional)
+    // Crear pipes (Comunicacion bidereccional) // Taria bueno cambiar los nombres para que sean mas descriptivas
     int **pipes1 = create_array_pipes(W); // pipes de los hijos, envia datos de cada worker al broker (hijo escribe, padre lee)
     int **pipes2 = create_array_pipes(W); // pipes del padre, envia datos a los workers (hijo lee, padre escribe)
     //Create_array_pipes se encuentra sin probar, hay que estar atentos a errores -Martin
@@ -31,7 +31,9 @@ int main(int argc, char *argv[])
         }
     }
     */
-    
+
+   
+    //Estaria bueno antes de crear los hijos, saber la cantidad de pixeles que se le va a enviar a cada worker 
     // Crear hijos
     for (int i = 0; i < W; i++)
     {

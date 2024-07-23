@@ -6,7 +6,7 @@ usando un factor de saturación
 Entrada: Factor de saturacion, pixel
 Salida: Pixel saturado
 */
-RGBPixel *saturate_pixel(float factor, RGBPixel pixel)
+RGBPixel saturate_pixel(float factor, RGBPixel pixel)
 {
     RGBPixel new_pixel;
     new_pixel.r = pixel.r * factor;
@@ -26,7 +26,7 @@ RGBPixel *saturate_pixel(float factor, RGBPixel pixel)
         new_pixel.b = (unsigned char)255;
     }
 
-    return &new_pixel;
+    return new_pixel;
 }
 
 /*
@@ -35,7 +35,7 @@ imagen a escala de grises
 Entrada: Pixel
 Salida: Pixel en escala de grises
 */
-RGBPixel *grayScale_pixel(RGBPixel pixel)
+RGBPixel grayScale_pixel(RGBPixel pixel)
 {
     RGBPixel new_pixel;
     unsigned char gray = (unsigned char)(pixel.r * 0.3 + pixel.g * 0.59 + pixel.b * 0.11);
@@ -44,7 +44,7 @@ RGBPixel *grayScale_pixel(RGBPixel pixel)
     new_pixel.g = gray;
     new_pixel.b = gray;
 
-    return &new_pixel;
+    return new_pixel;
 }
 
 /*
@@ -53,7 +53,7 @@ imagen en base a un umbral de binarización
 Entrada: Umbral de binarización, pixel
 Salida: Pixel binarizado
 */
-RGBPixel *binarize_pixel(float factor, RGBPixel pixel)
+RGBPixel binarize_pixel(float factor, RGBPixel pixel)
 {
     RGBPixel new_pixel;
     int umbral = (int)fabs(255 * factor);
@@ -72,5 +72,29 @@ RGBPixel *binarize_pixel(float factor, RGBPixel pixel)
         new_pixel.b = 0;
     }
 
-    return &new_pixel;
+    return new_pixel;
+}
+
+void saturate_pixels(RGBPixel *pixels, int Npixels, float factor)
+{
+    for (int i = 0; i < Npixels; i++)
+    {
+        pixels[i] = saturate_pixel(factor, pixels[i]);
+    }
+}
+
+void grayScale_pixels(RGBPixel *pixels, int Npixels)
+{
+    for (int i = 0; i < Npixels; i++)
+    {
+        pixels[i] = grayScale_pixel(pixels[i]);
+    }
+}
+
+void binarize_pixels(RGBPixel *pixels, int Npixels, float factor)
+{
+    for (int i = 0; i < Npixels; i++)
+    {
+        pixels[i] = binarize_pixel(factor, pixels[i]);
+    }
 }
