@@ -1,16 +1,18 @@
 #include "fworker.h"
 
 int main(int argc, char *argv[]){
-    char buffer[100];
-    char nombreImg[200];
-    int inicio, fin, alto;
-    float f, p, u, v;
+    
+    int Npixels = atoi(argv[5]);
+    int f = atoi(argv[1]);
+    float p = atof(argv[2]);
+    float u = atof(argv[3]);
+    float v = atof(argv[4]);
 
     /* ----- Implementacion ----- */
     //Cosas necesarias para el worker (Recibir informacion)
     //float p, u, v; int Npixels, f;
-    int Npixels;
 
+    printf("Worker iniciado...\n");
 
     RGBPixel *data;
 
@@ -18,6 +20,8 @@ int main(int argc, char *argv[]){
 
     read(STDIN_FILENO, data, Npixels * sizeof(RGBPixel));
 
+    printf("Worker recibio %d pixeles\n", Npixels);
+    printf("rojo primer pixel: %d\n", data[0].r);
     //RGBPixel *new_pixels;
     //new_pixels = (RGBPixel*)malloc(sizeof(RGBPixel) * Npixels); esto talvez no haga falta
 
@@ -25,6 +29,7 @@ int main(int argc, char *argv[]){
 
     if (f == 1 ){
         write(STDOUT_FILENO, data, Npixels * sizeof(RGBPixel));
+        free(data);
         return 0;
     }
 
@@ -32,6 +37,7 @@ int main(int argc, char *argv[]){
 
     if (f == 2){
         write(STDOUT_FILENO, data, Npixels * sizeof(RGBPixel));
+        free(data);
         return 0;
     }
 
@@ -42,16 +48,4 @@ int main(int argc, char *argv[]){
     free(data);
     return 0;
     /* -------------------------- */
-
-    while(fgets(buffer, sizeof(buffer), stdin) != NULL) {
-        buffer[strcspn(buffer, "\n")] = 0;
-
-        //Leer informacion
-        //sscanf(buffer, "%d %d %d %s", &inicio, &fin, &alto, nombreImg);
-        //printf("%d %d %d %s\n", inicio, fin, alto, nombreImg);
-
-    }
-
-    
-    printf("Hola. Soy un worker\n");
 }

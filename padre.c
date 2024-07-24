@@ -92,8 +92,6 @@ int main(int argc, char *argv[]){
             } else {
                 strcpy(R, optarg); // Asignar el puntero realocado a la variable original
             }
-            printf("R: %s\n", R);
-            break;
             break;
         }
     }

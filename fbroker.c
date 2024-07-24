@@ -32,9 +32,9 @@ int** create_array_pipes(int w) {
     return pipes;
 }
 /*
-Descripcion: Función que envia los datos necesarios para procesar
-una imagen a los workers
-Entrada: Arreglo de pipes, cantidad de workers, arreglo de pixeles, 
+Descripcion: Función que envia los datos necesarios para procesar una imagen a los workers
+Entrada: Arreglo de pipes, cantidad de workers, arreglo de pixeles, cantidad de pixeles, 
+        cantidad de pixeles que le corresponden al ultimo worker
 Salida: N/A
 */
 void send_data(int** pipes, int W, RGBPixel* data, int Npixels, int lastPixels) {
@@ -42,6 +42,7 @@ void send_data(int** pipes, int W, RGBPixel* data, int Npixels, int lastPixels) 
     Esto no esta terminado, falta dividir los datos y enviarlos a los workers
     */
     
+    //Falta hecharle un ojo paso por paso antes de probarlo, es muy probable que no funcione como esperamos -Martin
     RGBPixel* dataToSend = (RGBPixel*)malloc(Npixels * sizeof(RGBPixel));
 
     int iter = 0;
@@ -59,10 +60,9 @@ void send_data(int** pipes, int W, RGBPixel* data, int Npixels, int lastPixels) 
         // Escribir en el descriptor de escritura
         write(pipes[iter][1], dataToSend, Npixels * sizeof(RGBPixel));
         
+        close(pipes[iter][1]);
         
         iter++;
-        //Puede que este de mas
-        iter2++;
     }
     if(lastPixels == Npixels) {
         
@@ -85,7 +85,7 @@ void send_data(int** pipes, int W, RGBPixel* data, int Npixels, int lastPixels) 
     }
 
     // Cerrar el descriptor de escritura
-    close(pipes[W][0]);
+    close(pipes[W-1][0]);
     
     
     for(int j = 0; j < W; j++) {
@@ -113,13 +113,14 @@ void receive_data(int** pipes, int W, RGBPixel* data, int Npixels, int lastPixel
 
     RGBPixel* dataReceived = (RGBPixel*)malloc(Npixels * sizeof(RGBPixel));
     int sizeUsed = 0;
-    int i = 0, j = 0;
+    int i = 0;
     while(i < W-1) {
 
         //cerrar el descriptor de escritura
         close(pipes[i][1]);
         read(pipes[i][0], dataReceived, Npixels * sizeof(RGBPixel));
         memcpy(data + sizeUsed*i, dataReceived, Npixels * sizeof(RGBPixel));
+        close(pipes[i][0]);
         
         i++;
     }
@@ -128,11 +129,103 @@ void receive_data(int** pipes, int W, RGBPixel* data, int Npixels, int lastPixel
         close(pipes[i][1]);
         read(pipes[i][0], dataReceived, Npixels * sizeof(RGBPixel));
         memcpy(data + sizeUsed*i, dataReceived, Npixels * sizeof(RGBPixel));
+        close(pipes[i][0]);
     } else {
         close(pipes[i][1]);
         read(pipes[i][0], dataReceived, lastPixels * sizeof(RGBPixel));
         memcpy(data + sizeUsed*i, dataReceived, lastPixels * sizeof(RGBPixel));
+        close(pipes[i][0]);
     }
 
     free(dataReceived);
+}
+
+
+/*
+Descripcion: Funcion que calcula la cantidad de pixeles para cada worker basado en en M % W
+    - Pixels[0] = Cantidad de pixeles que le corresponden a cada worker a excepcion del ultimo
+    - Pixels[1] = Cantidad de pixeles que le corresponden al ultimo worker
+Entrada: Alto de la imagen, cantidad de workers
+Salida: Arreglo de enteros
+*/
+int* pixels_per_worker(int alto, int W) {
+    int* pixels = (int*)malloc(2 * sizeof(int));
+    int fragmentoWorkers = alto / W; //Cantidad de pixeles que corresponden a cada worker
+    int UltimoWorker ; //Cantidad de pixeles que le corresponden al ultimo worker (Se encarga de las columnas restantes)
+    
+    if (alto % W == 0) {
+        UltimoWorker = fragmentoWorkers;
+    }else{
+        UltimoWorker = alto % W;
+    }
+    
+    pixels[0] = fragmentoWorkers;
+    pixels[1] = UltimoWorker;
+
+    return pixels;
+}
+
+void create_sons(int W, int** pipes1, int** pipes2,const char *argvW[], const char *argvLW[]) {
+    int i;
+    printf("Creando workers\n");
+    for (i = 0; i < W-1; i++) {
+        pid_t pid = fork();
+        if (pid == -1) {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        }else if (pid == 0) {
+            // Cerrar los descriptores de lectura
+            close(pipes1[i][0]);
+            close(pipes2[i][0]);
+
+            // Duplicar el descriptor de escritura
+            dup2(pipes1[i][1], STDOUT_FILENO);
+            dup2(pipes2[i][1], STDERR_FILENO);
+
+            // Ejecutar el worker
+            if (execv("./worker", (char* const*)argvW) == -1) {
+                perror("execv");
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            close(pipes2[i][0]); // Cerrar el extremo de lectura en el broker
+            close(pipes1[i][1]); // Cerrar el extremo de escritura en el broker
+        }
+    }
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    } else if(pid == 0) {
+        // Cerrar los descriptores de lectura
+        close(pipes1[i][0]);
+        close(pipes2[i][0]);
+
+        // Duplicar el descriptor de escritura
+        dup2(pipes1[i][1], STDOUT_FILENO);
+        dup2(pipes2[i][1], STDERR_FILENO);
+
+        // Ejecutar el worker
+        if (execv("./worker", (char* const*)argvLW) == -1) {
+            perror("execv");
+            exit(EXIT_FAILURE);
+        }else {printf("se ejecuto el worker\n");}
+    }else if (pid > 0)
+        {
+            close(pipes2[i][0]); // Cerrar el extremo de lectura en el broker
+            close(pipes1[i][1]); // Cerrar el extremo de escritura en el broker
+        }
+        else
+        {
+            printf("Error al crear worker");
+            exit(1);
+        }
+}
+
+void free_pipes(int** pipes, int w) {
+    for (int i = 0; i < w; i++) {
+        free(pipes[i]);
+    }
+    free(pipes);
 }
