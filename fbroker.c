@@ -105,10 +105,16 @@ Salida: N/A
 */
 void wait_for_workers(int W) {
     for (int i = 0; i < W; i++) {
-        wait(NULL);
+        pid_t childPid = wait(NULL); //Proceso padre espera al proceso hijo
+
+        if (childPid == -1) {
+            perror("wait");
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
+// Muy probablemente esto este malo, hay que revisarlo -Martin
 void receive_data(int** pipes, int W, RGBPixel* data, int Npixels, int lastPixels) {
 
     RGBPixel* dataReceived = (RGBPixel*)malloc(Npixels * sizeof(RGBPixel));
@@ -145,11 +151,10 @@ void receive_data(int** pipes, int W, RGBPixel* data, int Npixels, int lastPixel
 Descripcion: Funcion que calcula la cantidad de pixeles para cada worker basado en en M % W
     - Pixels[0] = Cantidad de pixeles que le corresponden a cada worker a excepcion del ultimo
     - Pixels[1] = Cantidad de pixeles que le corresponden al ultimo worker
-Entrada: Alto de la imagen, cantidad de workers
-Salida: Arreglo de enteros
+Entrada: Alto de la imagen, cantidad de workers, arreglo de numeros de pixeles
+Salida: N/A
 */
-int* pixels_per_worker(int alto, int W) {
-    int* pixels = (int*)malloc(2 * sizeof(int));
+void pixels_per_worker(int alto, int W, int *pixels){ 
     int fragmentoWorkers = alto / W; //Cantidad de pixeles que corresponden a cada worker
     int UltimoWorker ; //Cantidad de pixeles que le corresponden al ultimo worker (Se encarga de las columnas restantes)
     
@@ -161,10 +166,67 @@ int* pixels_per_worker(int alto, int W) {
     
     pixels[0] = fragmentoWorkers;
     pixels[1] = UltimoWorker;
-
-    return pixels;
 }
 
+/* Idea crear una funcion para que cree un worker y solamente llamarlo n veces
+Entradas para la funcion: arreglo de los pixeles, los argumentos que necesita el worker
+Salidas para la funcion: N/A*/
+/* ----- Idea funcion para un worker -----*/
+void CreateWorker(RGBPixel *pixels, const char *argv[], int **pipesRead, int **pipesWrite, int pipeNumber){
+    pid_t pid = fork();
+    if(pid == -1){
+        perror("fork");
+        exit(ERROR);
+    }
+
+    if (pid > 0){
+        close(pipesWrite[pipeNumber][0]); // Cerrar el extremo de lectura en el broker 
+        
+        write(pipesWrite[pipeNumber][1], pixels, sizeof(pixels)); // Se necesita tener los pixeles para enviarlos a los workers
+
+        close(pipesWrite[pipeNumber][1]); // Cerrar el extremo de escritura en el broker
+    } else {
+        close(pipesRead[pipeNumber][1]); // Cerrar el extremo de escritura en el broker
+
+        dup2(pipesRead[pipeNumber][0], STDIN_FILENO); // Duplicar el descriptor de lectura
+
+        // Ejecutar el worker
+        if (execv("./worker", (char* const*)argv) == -1) {
+            perror("execv");
+            exit(ERROR);
+        }
+    }
+}
+/* Parte de improvisacion */
+void getPixels(RGBPixel *data, int Npixels, int i, RGBPixel *pixels) {
+    for (int j = 0; j < Npixels; j++) {
+        pixels[j] = data[i * Npixels + j];
+    }
+}
+/*--------------------------*/
+
+
+
+/* ----- Re-Creacion de create_sons ----- */
+
+void create_sons(int Workers, int **pipesRead, int **pipesWrite, const char *argvW[], const char *argvLW[], RGBPixel *data, int Alto) {
+
+    int PixelsForWorkers[2];
+    pixels_per_worker(Alto, Workers, PixelsForWorkers);
+    
+    RGBPixel pixels[PixelsForWorkers[0]];
+    for (int i = 0; i < Workers-1; i++){
+        getPixels(data, PixelsForWorkers[0], i, pixels);
+        CreateWorker(pixels, argvW, pipesRead, pipesWrite, i);
+    }
+    getPixels(data, PixelsForWorkers[1], Workers-1, pixels);
+    CreateWorker(pixels, argvLW, pipesRead, pipesWrite, Workers-1);
+
+}
+
+/* --------------------------------------- */
+
+/*
 void create_sons(int W, int** pipes1, int** pipes2,const char *argvW[], const char *argvLW[]) {
     int i;
     printf("Creando workers\n");
@@ -222,6 +284,7 @@ void create_sons(int W, int** pipes1, int** pipes2,const char *argvW[], const ch
             exit(1);
         }
 }
+*/
 
 void free_pipes(int** pipes, int w) {
     for (int i = 0; i < w; i++) {

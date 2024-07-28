@@ -5,11 +5,22 @@ int main(int argc, char *argv[])
     // Obtener datos
     int f = atoi(argv[2]), W = atoi(argv[6]);
     float u = atof(argv[4]), p = atof(argv[3]), v = atof(argv[5]);
-    char *N = argv[1];  //falta la asignacion de memoria con malloc
+    char *UnsgdN = argv[1];  //falta la asignacion de memoria con malloc
+    char *N = (char *)malloc(50 * sizeof(char));   //Nombre prefijo imagenes(Imagen)
     //Falta verificacion de argumentos y alojamiento de memoria me encargo de eso, es para recordar -Martin
     int loop = 1; // Verdadero, es una bandera para continuar un ciclo
 
-    
+    if(strlen(UnsgdN) >= 50 ){
+        char *temp = (char *)realloc(N, (strlen(UnsgdN + 1) * sizeof(char))); // +1 para el carácter nulo
+        if (temp == NULL) {
+            printf("Error en la reasignacion de memoria\n");
+            free(N);                                        // Liberar la memoria anterior si realloc falla
+            return 1;
+        }
+    N = temp;
+    } else {
+        strcpy(N, UnsgdN); // Asignar el puntero realocado a la variable original
+    }
 
     printf("Hola. Soy un broker\n");
 
@@ -142,8 +153,8 @@ int main(int argc, char *argv[])
         }
         */
         
-        int *pixelsPerWorker;
-        pixelsPerWorker = pixels_per_worker(alto, W);
+        int pixelsPerWorker[2];
+        pixels_per_worker(alto, W, pixelsPerWorker);
 
         char StrNPixels[40];
         char StrLPixels[40];
@@ -154,10 +165,22 @@ int main(int argc, char *argv[])
         const char *argvWorker[]={"./worker",argv[2],argv[3],argv[4],argv[5],StrNPixels,(char*)NULL};
         const char *argvLWorker[]={"./worker",argv[2],argv[3],argv[4],argv[5],StrLPixels,(char*)NULL};
 
-        create_sons(W, pipes1, pipes2, argvWorker, argvLWorker);
+
+        //No esta funcionando, no logro llegar a los workers y la ejecuccion se queda atascada en algun punto
+        //El problema seguramente esta en la comunicacion entre los procesos y en las funciones de fbroker.c
         
-        /* ---- En la teoria aqui deberia ir ---- */
+        /* ---- RE-ideacion de la solucion --- */
+        printf("%d\n", image->data[0].r);
+        create_sons(W, pipes1, pipes2, argvWorker, argvLWorker, image->data, alto);
+        wait(NULL);
+        //wait_for_workers(W);
+
+        receive_data(pipes1, W, image->data, pixelsPerWorker[0], pixelsPerWorker[1]);
+        
+        /* ---- En la teoria aqui deberia ir ---- 
         send_data(pipes2,W,image->data, pixelsPerWorker[0], pixelsPerWorker[1]);
+
+        create_sons(W, pipes1, pipes2, argvWorker, argvLWorker);
 
         //esperar a que los workers terminen
         wait_for_workers(W);
@@ -177,7 +200,6 @@ int main(int argc, char *argv[])
         free_pipes(pipes2, W);
         free(image->data);
         free(image);
-        free(pixelsPerWorker);
         loop++;
     }
 
