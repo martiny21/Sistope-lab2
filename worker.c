@@ -3,24 +3,41 @@
 
 int main(int argc, char *argv[]){
 
-    fprintf(stderr, "Uso: %s %s %s %s %s\n", argv[1],argv[2],argv[3],argv[4],argv[5]);
+    if (argc < 6) {
+        fprintf(stderr, "Uso: %s <f> <p> <u> <v> <Npixels>\n", argv[0]);
+        fprintf(stderr, "Error: Insufficient command line arguments\n");
+        exit(ERROR);
+    }
 
-    
-    int Npixels = atoi(argv[5]);
+    // Imprimir los argumentos recibidos
+    fprintf(stdout, "Uso: %s %s %s %s %s\n", argv[1], argv[2], argv[3], argv[4], argv[5]);
+    fflush(stdout);
+    fprintf(stdout, "Worker iniciado...\n");
+    fflush(stdout);
+
+    // Convertir los argumentos a los tipos correspondientes
     int f = atoi(argv[1]);
     float p = atof(argv[2]);
     float u = atof(argv[3]);
     float v = atof(argv[4]);
-
-    printf("%d\n",Npixels);
-    /* ----- RE-Implementacion ----- */
-    printf("Worker iniciado...\n");
-    RGBPixel pixels[Npixels];
-
+    int Npixels = atoi(argv[5]);
+    fprintf(stderr, "Worker recibio %d pixeles\n", Npixels);
+    // Imprimir las variables convertidas
+    fprintf(stdout, "f = %d\n", f);
+    fprintf(stdout, "p = %f\n", p);
+    fprintf(stdout, "u = %f\n", u);
+    fprintf(stdout, "v = %f\n", v);
+    fprintf(stdout, "Npixels = %d\n", Npixels);
     
-    // Leer datos del pipe
+    
+    /* ----- RE-Implementacion ----- */
+    
+    RGBPixel pixels[Npixels];
+    size_t dataSize = Npixels * sizeof(RGBPixel);
 
-    ssize_t bytes_read = read(STDIN_FILENO, pixels, sizeof(pixels));
+
+    ssize_t bytes_read = read(STDIN_FILENO, pixels, dataSize);
+    fprintf(stderr, "pixel rojo en worker: %d\n", pixels[0].r);
 
     if (bytes_read == -1) {
         perror("Error al leer datos del pipe");

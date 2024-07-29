@@ -5,6 +5,9 @@
 #include "BMPImage.h"
 #include "BMPHeader.h"
 #include "BMPInfoHeader.h"
+#define ERROR 1
+#define READ 0
+#define WRITE 1
 
 BMPImage* read_bmp(const char* filename); //Leer imagenes
 

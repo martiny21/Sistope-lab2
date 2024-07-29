@@ -15,6 +15,8 @@ int main(int argc, char *argv[]){
     char *N = (char *)malloc(50 * sizeof(char));   //Nombre prefijo imagenes(Imagen)
     char fStr[20],WStr[20],uStr[20],pStr[20],vStr[20]; //Strings para convertir los valores a string
 
+    int fd[2]; // File descriptor para el pipe
+
     if (N == NULL || C == NULL || R == NULL) {
         printf("Error en la asignacion de memoria\n");
         free(N);
@@ -127,6 +129,11 @@ int main(int argc, char *argv[]){
         printf("Error al crear la carpeta.\n");
     }
 
+    if(pipe(fd) == -1) {
+        fprintf(stderr,"pipe");
+        exit(EXIT_FAILURE);
+    }
+
     //Creacion archivo CSV
     FILE *fileCSV;
     fileCSV = fopen(R, "w"); // Abre el archivo en modo escritura ("w"), se cierra al finalizar el programa
@@ -136,9 +143,11 @@ int main(int argc, char *argv[]){
         return 0;
     }
 
+
+
     //Archivo CSV con 2 columnas
     fprintf(fileCSV, "Nombre Imagen,Clasificacion\n");
-
+    //esto tambien se puede hacer funcion
     sprintf(fStr,"%d",f);
     sprintf(WStr,"%d",W);
     sprintf(uStr,"%.2f",u);
@@ -149,10 +158,13 @@ int main(int argc, char *argv[]){
     const char *argv2[] = {"./broker", N, fStr, pStr, uStr, vStr, WStr, (char *)NULL};
 
     
-    
+    // Esto se puede hacer funcion
 
     pid_t pid = fork();
     if(pid == 0) {
+        close(fd[READ]);                    // Cerrar el extremo de lectura del pipe
+        dup2(fd[WRITE], STDOUT_FILENO);     // Redirigir la salida estándar al pipe 
+
         // Intentar usar broker
         if(execv("./broker", (char * const *)argv2) == -1) {
             perror("execv falló");
@@ -166,8 +178,14 @@ int main(int argc, char *argv[]){
             exit(EXIT_FAILURE);
         }
 
+        close(fd[WRITE]); // Cerrar el extremo de escritura del pipe
+        
+
         printf("Proceso hijo %d terminó\n", childPid);
     }
+
+
+
 
     if (N != NULL) {
         free(N);

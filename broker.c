@@ -7,13 +7,13 @@ int main(int argc, char *argv[])
     float u = atof(argv[4]), p = atof(argv[3]), v = atof(argv[5]);
     char *UnsgdN = argv[1];  //falta la asignacion de memoria con malloc
     char *N = (char *)malloc(50 * sizeof(char));   //Nombre prefijo imagenes(Imagen)
-    //Falta verificacion de argumentos y alojamiento de memoria me encargo de eso, es para recordar -Martin
     int loop = 1; // Verdadero, es una bandera para continuar un ciclo
 
     if(strlen(UnsgdN) >= 50 ){
         char *temp = (char *)realloc(N, (strlen(UnsgdN + 1) * sizeof(char))); // +1 para el carácter nulo
         if (temp == NULL) {
             printf("Error en la reasignacion de memoria\n");
+            fflush(stdout);
             free(N);                                        // Liberar la memoria anterior si realloc falla
             return 1;
         }
@@ -23,61 +23,9 @@ int main(int argc, char *argv[])
     }
 
     printf("Hola. Soy un broker\n");
+    fflush(stdout);
 
 
-    //Create_array_pipes se encuentra sin probar, hay que estar atentos a errores -Martin
-
-    /*
-    for (int i = 0; i < W; i++)
-    {
-        if (pipe(pipes1[i]) == -1)
-        {
-            printf("Error al crear pipe\n");
-            exit(1);
-        }
-        if (pipe(pipes2[i]) == -1)
-        {
-            printf("Error al crear pipe\n");
-            exit(1);
-        }
-    }
-    */
-
-    /*
-    //Estaria bueno antes de crear los hijos, saber la cantidad de pixeles que se le va a enviar a cada worker 
-    // Crear hijos
-    for (int i = 0; i < W; i++)
-    {
-        pid_t pid = fork();
-
-        if (pid == 0)
-        {
-            close(pipes2[i][1]);
-            close(pipes1[i][0]);
-
-            dup2(pipes2[i][0], STDIN_FILENO); // Redirigir stdin al pipe broker-to-worker
-            dup2(pipes2[i][1], STDOUT_FILENO);
-
-            // Intentar ejecutar el worker
-            if(execv("./worker", argv)){
-                printf("Error al ejecutar worker\n");
-                exit(EXIT_FAILURE);
-            }
-            //El worker no necesita tantos argumentos
-            exit(1);
-        }
-        else if (pid > 0)
-        {
-            close(pipes2[i][0]); // Cerrar el extremo de lectura en el broker
-            close(pipes1[i][1]); // Cerrar el extremo de escritura en el broker
-        }
-        else
-        {
-            printf("Error al crear worker");
-            exit(1);
-        }
-    }
-    */
     // Variables para concatenacion de cadenas de caracteres
     char bmp[20] = ".bmp";
     char *name1;
@@ -87,9 +35,12 @@ int main(int argc, char *argv[])
 
     
     resultado[0] = '\0';
+
+    BMPImage *Images = NULL;
+
     while (loop < 3)
     {
-
+        
         // Crear pipes (Comunicacion bidereccional) // Taria bueno cambiar los nombres para que sean mas descriptivas
         int **pipes1 = create_array_pipes(W); // pipes de los hijos, envia datos de cada worker al broker (hijo escribe, padre lee)
         int **pipes2 = create_array_pipes(W); // pipes del padre, envia datos a los workers (hijo lee, padre escribe)
@@ -114,44 +65,12 @@ int main(int argc, char *argv[])
             free_pipes(pipes1, W);
             free_pipes(pipes2, W);
             return 0;
-            /* 
-            eliminar el return 0;
-                ** Esto es una idea ** 
-            break;
-            //saliendo del while
-            
-            */
+
         }
 
         int ancho = image->width;
         int alto = image->height;
-        /*
-        int fragmentoWorkers = alto / W; //Cantidad de pixeles que corresponden a cada worker
-        int UltimoWorker ; //Cantidad de pixeles que le corresponden al ultimo worker (Se encarga de las columnas restantes)
         
-        if (ancho % W == 0) {
-            UltimoWorker = fragmentoWorkers;
-        }else{
-            UltimoWorker = alto % W;
-        }
-
-        for(int i = 0; i < W; i++) {
-            //Definir las columnas que procesará el worker
-            int inicio = fragmentoWorkers * i;
-            int fin = inicio + fragmentoWorkers;
-            //Columnas asigmadas al último worker
-            if (W -1 == i) {
-                fin = UltimoWorker;
-            }
-
-            char info[200];
-            //snprintf(info, sizeof(info), "%d %d %d %s\n", inicio, fin, alto, resultado);
-            //Esto es para probar que se envia la informacion correctamente
-            snprintf(info, sizeof(info), "%d %f %f %f %d %d %d %s\n", f, p, u, v, inicio, fin, alto, resultado);
-            write(pipes2[i][1], info, strlen(info));
-
-        }
-        */
         
         int pixelsPerWorker[2];
         pixels_per_worker(alto, W, pixelsPerWorker);
@@ -162,47 +81,40 @@ int main(int argc, char *argv[])
         sprintf(StrNPixels, "%d", pixelsPerWorker[0]);
         sprintf(StrLPixels, "%d", pixelsPerWorker[1]);
 
-        const char *argvWorker[]={"./worker",argv[2],argv[3],argv[4],argv[5],StrNPixels,(char*)NULL};
-        const char *argvLWorker[]={"./worker",argv[2],argv[3],argv[4],argv[5],StrLPixels,(char*)NULL};
+        char *argvWorker[] = {"./worker", argv[2], argv[3], argv[4], argv[5], StrNPixels, (char *)NULL};
+        char *argvLWorker[] = {"./worker", argv[2], argv[3], argv[4], argv[5], StrLPixels, (char *)NULL};
 
+        RGBPixel *NewData = (RGBPixel*)malloc(sizeof(RGBPixel) * ancho * alto);
 
-        //No esta funcionando, no logro llegar a los workers y la ejecuccion se queda atascada en algun punto
-        //El problema seguramente esta en la comunicacion entre los procesos y en las funciones de fbroker.c
-        
         /* ---- RE-ideacion de la solucion --- */
-        printf("%d\n", image->data[0].r);
+
         create_sons(W, pipes1, pipes2, argvWorker, argvLWorker, image->data, alto);
-        wait(NULL);
-        //wait_for_workers(W);
-
-        receive_data(pipes1, W, image->data, pixelsPerWorker[0], pixelsPerWorker[1]);
-        
-        /* ---- En la teoria aqui deberia ir ---- 
-        send_data(pipes2,W,image->data, pixelsPerWorker[0], pixelsPerWorker[1]);
-
-        create_sons(W, pipes1, pipes2, argvWorker, argvLWorker);
-
-        //esperar a que los workers terminen
         wait_for_workers(W);
 
-        RGBPixel *imageResulted = (RGBPixel*)malloc(sizeof(RGBPixel) * ancho * alto);
-        //Recibir datos de los workers
-        receive_data(pipes1,W,imageResulted, pixelsPerWorker[0], pixelsPerWorker[1]);
+        receive_data(pipes1, W, NewData, pixelsPerWorker[0], pixelsPerWorker[1]);
+        
+        /*Funciones a implementar*/
+        BMPImage NewImage = formatImage(NewData, alto, ancho);
 
-        //Construir el BMPImage
+        addImage(Images,loop, NewImage);
+        /* - - - - - */
 
-
-        //Mandar BMPimagen a proceso padre
-        //pipe padre
-        /* -------------------------------------- */
+        //loop++;
+        
 
         free_pipes(pipes1, W);
         free_pipes(pipes2, W);
         free(image->data);
         free(image);
-        loop++;
     }
 
+    /* Funciones por implementa*/
+    sendImages(Images);
+    freeImages(Images,loop);
+    /* - - - - - */
+
+    free(Images);
     free(N);
     printf("Fin del programa\n");
+    fflush(stdout);
 }
