@@ -28,4 +28,8 @@ void create_sons(int Workers, int **pipesRead, int **pipesWrite, char *argvW[], 
 
 BMPImage * addImage(BMPImage *Images, int *count, BMPImage newImage);
 
-formatImage(RGBPixel *data, BMPImage *image, int Npixels);
+BMPImage formatImage(RGBPixel *data, BMPImage *image);
+
+void sendImages(BMPImage *Images, int count);
+
+void freeImages(BMPImage *images, int count);

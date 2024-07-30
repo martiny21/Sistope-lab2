@@ -100,125 +100,7 @@ void write_bmp(const char* filename, BMPImage* image) {
     fclose(file);
 }
 
-/*
-Entrada: imagen tipo BMPImage, factor de saturación tipo float
-Salida: imagen saturada tipo BMPImage
-Descripcion: Se satura una imagen usando un facto de saturación, este factor se
-multiplica a cada componente de cada pixel de la imagen (pixel.r, pixel.g y pixel.b)
-para de esta manera retornar la imagen saturada
-*/
-BMPImage* saturate_bmp(BMPImage* image, float factor) {
-    BMPImage* new_image = (BMPImage*)malloc(sizeof(BMPImage));
-    
-    // Comprobacion de asignacion de memoria
-    if (new_image == NULL){
-        printf("Error asignando memoria para la nueva imagen");
-        return NULL;
-    }
 
-    new_image->width = image->width;
-    new_image->height = image->height;
-    new_image->data = (RGBPixel*)malloc(sizeof(RGBPixel) * image->width * image->height);
-
-    // Comprobacion de asignacion de memoria a pixeles
-    if (new_image->data == NULL){
-        printf("Error asignando memoria para los pixeles de la imagen");
-        free(new_image);
-        return NULL;
-    }
-
-    // Saturacion de imagen multiplicando cada pixel por el factor
-    for (int y = 0; y < image->height; y++) {
-        for (int x = 0; x < image->width; x++) {
-            RGBPixel pixel = image->data[y * image->width + x];
-            pixel.r = pixel.r * factor;
-            pixel.g = pixel.g * factor;
-            pixel.b = pixel.b * factor;
-   
-            //Asegurar que los pixeles esten dentro del rango valido
-            if (pixel.r > 255){
-                pixel.r = (unsigned char) 255;
-            }
-            if (pixel.g > 255){ 
-                pixel.g = (unsigned char) 255;
-            }
-            if (pixel.b > 255){ 
-                pixel.b = (unsigned char) 255;
-            }
-            
-            new_image->data[y * new_image->width + x] = pixel; 
-        }
-    }
-
-    return new_image;
-}
-
-/*
-Entrada: imagen tipo BMPImage (Imagen anteiormente saturada)
-Salida: imagen en escala de grises tipo BMPImage
-Descripcion: Se realiza la escala de grises de una imagen usando una ecuacion de luminiscencia:
-Y = pixel.r * 0.3 + pixel.g * 0.59 + pixel.b * 0.11, el resultado de esto se almacena en la variable
-gray y luego se asigna a cada componente de pixel (pixel.r, pixel.g y pixel.b)
-*/
-BMPImage* grayScale_bmp(BMPImage* image) {
-    BMPImage* new_image = (BMPImage*)malloc(sizeof(BMPImage));
-    new_image->width = image->width;
-    new_image->height = image->height;
-    new_image->data = (RGBPixel*)malloc(sizeof(RGBPixel) * image->width * image->height);
-
-    for (int y = 0; y < image->height; y++) {
-        for (int x = 0; x < image->width; x++) {
-            RGBPixel pixel = image->data[y * image->width + x];
-            //Aplicar ecuacion de luminiscencia
-            unsigned char gray = (unsigned char)(pixel.r * 0.3 + pixel.g * 0.59 + pixel.b * 0.11);
-            pixel.r = gray;
-            pixel.g = gray;
-            pixel.b = gray;
-            new_image->data[y * image->width + x] = pixel;
-        }
-    }
-
-    return new_image;
-}
-
-/*
-Entrada: imagen tipo BMPImage (imagen en escala de grises) y un umbral (factor) de binarizacion
-Salida: imagen binarizada tipo BMPImage
-Descripcion: se binariza una imagen usando un umbral (o factor) como referencia, si el pixel tiene
-un valor  mayor a este, se asigna 255, es decir, un pixel blanco, por el contrario, se asigna 0, indicando
-un pixel negro
-*/
-BMPImage* binarize_bmp(BMPImage* image,float factor){
-    BMPImage* new_image = (BMPImage*)malloc(sizeof(BMPImage));
-    new_image->width = image->width;
-    new_image->height = image->height;
-    new_image->data = (RGBPixel*)malloc(sizeof(RGBPixel) * image->width * image->height);
-    int umbral = (int)fabs(255 * factor);
-
-    for (int y = 0; y < image->height; y++) {
-        for (int x = 0; x < image->width; x++) {
-            RGBPixel pixel = image->data[y * image->width + x];
-
-            //Verificar si el pixel pasa el umbral
-            if ((pixel.r > umbral && pixel.g > umbral) && pixel.b > umbral) {
-                pixel.r = 255;
-                pixel.g = 255;
-                pixel.b = 255;
-
-            } else{
-                pixel.r = 0;
-                pixel.g = 0;
-                pixel.b = 0;
-
-            }
-
-            new_image->data[y * image->width + x] = pixel;
-        }
-    }
-
-    return new_image;
-
-}
 
 /*
 Entrada: imagen tipo BMPImage y un umbral (factor) de clasificacion
@@ -251,4 +133,42 @@ int nearly_black(BMPImage* image, float factor){
     }
 
     return 0; //Imagen no es nearly black
+}
+
+BMPImage * receiveImages(int pipe[2], int numberImages){
+    BMPImage * Images = (BMPImage*)malloc(sizeof(BMPImage)*numberImages);
+    size_t dataSize = sizeof(BMPImage) * numberImages;
+
+    read(pipe[READ],Images, dataSize);
+}
+
+int CountImages(char* prefix){
+    char resultado[200]; // Se mantiene la declaración de resultado
+    char signo = '_';
+    char bmp[20] = ".bmp";
+    resultado[0] = '\0';
+    int counter = 0;
+    int loop = 1;
+    int bandera = -1;
+
+    while(bandera == -1){
+        // Concatenar prefijo (N) y símbolo _
+        snprintf(resultado, sizeof(resultado), "%s%c", prefix, signo);
+
+        // Concatenar el número de loop con resultado
+        snprintf(resultado + strlen(resultado), sizeof(resultado) - strlen(resultado), "%d", loop);
+
+        // Concatenar la extension del archivo
+        snprintf(resultado + strlen(resultado), sizeof(resultado) - strlen(resultado), "%s", bmp);
+
+        FILE* file = fopen(resultado, "rb");
+        if(file == NULL){
+            bandera = 1;
+        } else {
+            counter++;
+            loop++;
+        }
+    }
+
+    return counter;
 }

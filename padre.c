@@ -1,10 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <getopt.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
+
 #include "functions.h"
 
 int main(int argc, char *argv[]){
@@ -129,6 +123,7 @@ int main(int argc, char *argv[]){
         printf("Error al crear la carpeta.\n");
     }
 
+    //Creacion de pipe
     if(pipe(fd) == -1) {
         fprintf(stderr,"pipe");
         exit(EXIT_FAILURE);
@@ -184,7 +179,15 @@ int main(int argc, char *argv[]){
         printf("Proceso hijo %d terminó\n", childPid);
     }
 
+    //Contar imagenes
+    int numImages = CountImages(N);
 
+    //Recibir imagenes
+    BMPImage *Images;
+
+    Images = receiveImages(fd, numImages);
+
+    printf("Rojo imagen modificada 0: %d\n", Images[0].data[0].r);
 
 
     if (N != NULL) {

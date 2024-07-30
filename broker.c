@@ -94,11 +94,21 @@ int main(int argc, char *argv[])
         receive_data(pipes1, W, NewData, pixelsPerWorker[0], pixelsPerWorker[1]);
         
         /*Funciones a implementar*/
-        BMPImage NewImage = formatImage(NewData, alto, ancho);
+        BMPImage NewImage = formatImage(NewData, image);
+        
 
-        addImage(Images,loop, NewImage);
+        addImage(Images,&loop, NewImage);
+
+        if (Images == NULL){
+            fprintf(stderr, "Error al añadir la imagen\n");  
+            free_pipes(pipes1, W);
+            free_pipes(pipes2, W);
+            free(image->data);
+            free(image);
+            return 1;
+        }
         /* - - - - - */
-
+        printf("Rojo imagen modificada %d: %d\n", loop, Images[loop-1].data[0].r);
         //loop++;
         
 
@@ -108,12 +118,11 @@ int main(int argc, char *argv[])
         free(image);
     }
 
-    /* Funciones por implementa*/
-    sendImages(Images);
+    
+    sendImages(Images, loop);
     freeImages(Images,loop);
     /* - - - - - */
 
-    free(Images);
     free(N);
     printf("Fin del programa\n");
     fflush(stdout);

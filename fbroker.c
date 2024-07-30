@@ -187,7 +187,7 @@ void free_pipes(int** pipes, int w) {
 }
 
 
-
+/*
 BMPImage * addImage(BMPImage *Images, int *count, BMPImage newImage){
     BMPImage *temp = (BMPImage*)realloc(Images, sizeof(BMPImage) * (*count + 1));
     if (temp == NULL){
@@ -199,6 +199,42 @@ BMPImage * addImage(BMPImage *Images, int *count, BMPImage newImage){
     Images[*count] = newImage;
     *count += 1;
     return Images;
+}
+*/
+/**
+void freeImages(BMPImage *images, int count) {
+    for (int i = 0; i < count; i++) {
+        free(images[i].data); // Liberar datos de la imagen si fueron asignados dinámicamente
+    }
+    free(images); // Liberar el arreglo de imágenes
+}
+*/
+BMPImage formatImage(RGBPixel *data, BMPImage *image){
+    BMPImage newImage;
+    newImage.width = image->width;
+    newImage.height = image->height;
+    newImage.data = data;
+    return newImage;
+}
+
+BMPImage * addImage(BMPImage *Images, int *count, BMPImage newImage){
+    BMPImage *temp = (BMPImage*)realloc(Images, sizeof(BMPImage) * (*count + 1));
+    if (temp == NULL){
+        fprintf(stderr,"Error al reasignar memoria\n");
+        free(Images);
+        return NULL;
+    }
+    Images = temp;
+    Images[*count + 1] = newImage;
+    *count += 1;
+    return Images;
+}
+
+void sendImages(BMPImage *Images, int count){
+    size_t dataSize = sizeof(BMPImage) * count;
+    write(STDOUT_FILENO, Images, dataSize);
+    close(STDOUT_FILENO);
+    
 }
 
 void freeImages(BMPImage *images, int count) {
