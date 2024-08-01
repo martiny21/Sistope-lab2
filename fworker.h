@@ -14,6 +14,6 @@ RGBPixel saturate_pixel(float factor, RGBPixel pixel);
 RGBPixel grayScale_pixel(RGBPixel pixel);
 RGBPixel binarize_pixel(float factor, RGBPixel pixel);
 
-void saturate_pixels(RGBPixel *pixels, int Npixels, float factor);
-void grayScale_pixels(RGBPixel *pixels, int Npixels);
-void binarize_pixels(RGBPixel *pixels, int Npixels, float factor);
+RGBPixel* saturate_pixels(RGBPixel *pixels, int Npixels, float factor);
+RGBPixel* grayScale_pixels(RGBPixel *pixels, int Npixels);
+RGBPixel* binarize_pixels(RGBPixel *pixels, int Npixels, float factor);

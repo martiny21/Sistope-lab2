@@ -81,37 +81,49 @@ int main(int argc, char *argv[])
         sprintf(StrNPixels, "%d", pixelsPerWorker[0]);
         sprintf(StrLPixels, "%d", pixelsPerWorker[1]);
 
+        fprintf(stderr, "Pixeles por worker: %d\n", pixelsPerWorker[0]);
+        fprintf(stderr, "Pixeles por ultimo worker: %d\n", pixelsPerWorker[1]);
         char *argvWorker[] = {"./worker", argv[2], argv[3], argv[4], argv[5], StrNPixels, (char *)NULL};
         char *argvLWorker[] = {"./worker", argv[2], argv[3], argv[4], argv[5], StrLPixels, (char *)NULL};
+        int Npixels = pixelsPerWorker[0];
+        RGBPixel NewData[ancho * alto];
 
-        RGBPixel *NewData = (RGBPixel*)malloc(sizeof(RGBPixel) * ancho * alto);
 
+        RGBPixel **pixelsArray = malloc(W * sizeof(RGBPixel *));
+        for (int i = 0; i < W; i++) {
+            pixelsArray[i] = malloc(Npixels * sizeof(RGBPixel));
+        }
         /* ---- RE-ideacion de la solucion --- */
 
         create_sons(W, pipes1, pipes2, argvWorker, argvLWorker, image->data, alto);
         wait_for_workers(W);
 
-        receive_data(pipes1, W, NewData, pixelsPerWorker[0], pixelsPerWorker[1]);
-        
+        readAllPixels(pipes2, W, pixelsArray ,ancho * alto, pixelsPerWorker[0] ,pixelsPerWorker[1]);
+        AllPixelsToOne(pixelsArray, W, NewData ,pixelsPerWorker[0], pixelsPerWorker[1], ancho * alto);
+
+        fprintf(stdout, "Rojo imagen original %d: %d\n", loop, image->data[0].r);
+        fprintf(stderr, "Rojo imagen modificada: %d\n", NewData[0].r);
         /*Funciones a implementar*/
-        BMPImage NewImage = formatImage(NewData, image);
+        BMPImage NewImage = formatImage(NewData, image);    //A lo mejor esto esta malo
         
 
         addImage(Images,&loop, NewImage);
 
         if (Images == NULL){
-            fprintf(stderr, "Error al añadir la imagen\n");  
+            fprintf(stderr, "Error al añadir la imagen\n");
+            freePixelsArray(pixelsArray, W);
             free_pipes(pipes1, W);
             free_pipes(pipes2, W);
             free(image->data);
             free(image);
             return 1;
         }
+
         /* - - - - - */
-        printf("Rojo imagen modificada %d: %d\n", loop, Images[loop-1].data[0].r);
+        printf("Rojo imagen modificada %d: %d\n", loop, Images[0].data[0].r);
         //loop++;
         
-
+        freePixelsArray(pixelsArray, W);
         free_pipes(pipes1, W);
         free_pipes(pipes2, W);
         free(image->data);

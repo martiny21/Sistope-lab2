@@ -75,26 +75,33 @@ RGBPixel binarize_pixel(float factor, RGBPixel pixel)
     return new_pixel;
 }
 
-void saturate_pixels(RGBPixel *pixels, int Npixels, float factor)
-{
+RGBPixel * saturate_pixels(RGBPixel *pixels, int Npixels, float factor)
+{   
+    RGBPixel *new_pixels = (RGBPixel*)malloc(sizeof(RGBPixel) * Npixels);
     for (int i = 0; i < Npixels; i++)
     {
-        pixels[i] = saturate_pixel(factor, pixels[i]);
+        new_pixels[i] = saturate_pixel(factor, pixels[i]);
     }
+    return new_pixels;
 }
 
-void grayScale_pixels(RGBPixel *pixels, int Npixels)
+RGBPixel * grayScale_pixels(RGBPixel *pixels, int Npixels)
 {
+    RGBPixel *new_pixels = (RGBPixel*)malloc(sizeof(RGBPixel) * Npixels);
     for (int i = 0; i < Npixels; i++)
     {
-        pixels[i] = grayScale_pixel(pixels[i]);
+        new_pixels[i] = grayScale_pixel(pixels[i]);
     }
+    return new_pixels;
 }
 
-void binarize_pixels(RGBPixel *pixels, int Npixels, float factor)
+RGBPixel * binarize_pixels(RGBPixel *pixels, int Npixels, float factor)
 {
+    RGBPixel *new_pixels = (RGBPixel*)malloc(sizeof(RGBPixel) * Npixels);
     for (int i = 0; i < Npixels; i++)
-    {
-        pixels[i] = binarize_pixel(factor, pixels[i]);
+    {   
+        new_pixels[i] = binarize_pixel(factor, pixels[i]);
     }
+
+    return new_pixels;
 }

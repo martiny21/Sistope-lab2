@@ -9,27 +9,14 @@ int main(int argc, char *argv[]){
         exit(ERROR);
     }
 
-    // Imprimir los argumentos recibidos
-    fprintf(stdout, "Uso: %s %s %s %s %s\n", argv[1], argv[2], argv[3], argv[4], argv[5]);
-    fflush(stdout);
-    fprintf(stdout, "Worker iniciado...\n");
-    fflush(stdout);
-
     // Convertir los argumentos a los tipos correspondientes
     int f = atoi(argv[1]);
     float p = atof(argv[2]);
     float u = atof(argv[3]);
     float v = atof(argv[4]);
     int Npixels = atoi(argv[5]);
-    fprintf(stderr, "Worker recibio %d pixeles\n", Npixels);
-    // Imprimir las variables convertidas
-    fprintf(stdout, "f = %d\n", f);
-    fprintf(stdout, "p = %f\n", p);
-    fprintf(stdout, "u = %f\n", u);
-    fprintf(stdout, "v = %f\n", v);
-    fprintf(stdout, "Npixels = %d\n", Npixels);
     
-    
+    fprintf(stderr, "Worker: Npixels=%d\n", Npixels);
     /* ----- RE-Implementacion ----- */
     
     RGBPixel pixels[Npixels];
@@ -37,8 +24,8 @@ int main(int argc, char *argv[]){
 
 
     ssize_t bytes_read = read(STDIN_FILENO, pixels, dataSize);
-    fprintf(stderr, "pixel rojo en worker: %d\n", pixels[0].r);
-
+    
+    fprintf(stderr, "Worker: rojo=%d\n", pixels[0].r);
     if (bytes_read == -1) {
         perror("Error al leer datos del pipe");
         exit(ERROR);
@@ -47,20 +34,31 @@ int main(int argc, char *argv[]){
         exit(ERROR);
     }
 
+    RGBPixel *new_pixels;
+
     // Procesar los pixeles
 
     if (f == 1) {
-        saturate_pixels(pixels, Npixels, p);
-        write(STDOUT_FILENO, pixels, sizeof(pixels));
+        new_pixels = saturate_pixels(pixels, Npixels, p);
+        if(write(STDOUT_FILENO, new_pixels, dataSize) != dataSize){
+            perror("Error al escribir datos en el pipe");
+            exit(ERROR);
+        }
     } else if (f == 2) {
-        saturate_pixels(pixels, Npixels, p);
-        grayScale_pixels(pixels, Npixels);
-        write(STDOUT_FILENO, pixels, sizeof(pixels));
+        new_pixels = saturate_pixels(pixels, Npixels, p);
+        new_pixels = grayScale_pixels(new_pixels, Npixels);
+        if(write(STDOUT_FILENO, new_pixels, dataSize) != dataSize){
+            perror("Error al escribir datos en el pipe");
+            exit(ERROR);
+        }
     } else {
-        saturate_pixels(pixels, Npixels, p);
-        grayScale_pixels(pixels, Npixels);
-        binarize_pixels(pixels, Npixels, u);
-        write(STDOUT_FILENO, pixels, sizeof(pixels));
+        new_pixels =saturate_pixels(pixels, Npixels, p);
+        new_pixels = grayScale_pixels(new_pixels, Npixels);
+        new_pixels = binarize_pixels(new_pixels, Npixels, u);
+        if(write(STDOUT_FILENO, new_pixels, dataSize) != dataSize){
+            perror("Error al escribir datos en el pipe");
+            exit(ERROR);
+        }
     }
 
     

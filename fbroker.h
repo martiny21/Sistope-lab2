@@ -12,7 +12,6 @@ int ** create_array_pipes(int w);
 
 void free_pipes(int **pipes, int w);
 
-void receive_data(int **pipes, int W, RGBPixel *data, int Npixels, int lastPixels);
 
 void wait_for_workers(int W);
 
@@ -33,3 +32,9 @@ BMPImage formatImage(RGBPixel *data, BMPImage *image);
 void sendImages(BMPImage *Images, int count);
 
 void freeImages(BMPImage *images, int count);
+
+void readAllPixels(int **pipes1, int W, RGBPixel **ArrayPixels , int totalPixels, int pixelsPerWorker, int lastPixels);
+
+void AllPixelsToOne(RGBPixel ** pixelsArray, int W, RGBPixel * NewData,int pixelsPerWorker, int lastPixels, int totalPixels);
+
+void freePixelsArray(RGBPixel ** pixelsArray, int W);

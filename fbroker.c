@@ -1,3 +1,6 @@
+
+
+
 #include "fbroker.h"
 
 /*
@@ -30,8 +33,6 @@ int** create_array_pipes(int w) {
     return pipes;
 }
 
-
-
 /*
 Descripcion: Función que hace que el proceso broker
 espere a que los workers terminen
@@ -49,37 +50,6 @@ void wait_for_workers(int W) {
     }
 }
 
-// Muy probablemente esto este malo, hay que revisarlo -Martin
-void receive_data(int** pipes, int W, RGBPixel* data, int Npixels, int lastPixels) {
-
-    RGBPixel* dataReceived = (RGBPixel*)malloc(Npixels * sizeof(RGBPixel));
-    int sizeUsed = 0;
-    int i = 0;
-    while(i < W-1) {
-
-        //cerrar el descriptor de escritura
-        close(pipes[i][1]);
-        read(pipes[i][0], dataReceived, Npixels * sizeof(RGBPixel));
-        memcpy(data + sizeUsed*i, dataReceived, Npixels * sizeof(RGBPixel));
-        close(pipes[i][0]);
-        
-        i++;
-    }
-    
-    if(lastPixels == Npixels) {
-        close(pipes[i][1]);
-        read(pipes[i][0], dataReceived, Npixels * sizeof(RGBPixel));
-        memcpy(data + sizeUsed*i, dataReceived, Npixels * sizeof(RGBPixel));
-        close(pipes[i][0]);
-    } else {
-        close(pipes[i][1]);
-        read(pipes[i][0], dataReceived, lastPixels * sizeof(RGBPixel));
-        memcpy(data + sizeUsed*i, dataReceived, lastPixels * sizeof(RGBPixel));
-        close(pipes[i][0]);
-    }
-
-    free(dataReceived);
-}
 
 
 /*
@@ -103,43 +73,39 @@ void pixels_per_worker(int alto, int W, int *pixels){
     pixels[1] = UltimoWorker;
 }
 /* ---- RE-RE-Implementacion ---- */
-void CreateWorker(RGBPixel *pixels, char *argv[], int **pipes1, int **pipes2, int pipeNumber, int NumberPixels){
+void CreateWorker(RGBPixel *pixels, char *argv[], int **pipes1, int **pipes2, int pipeNumber, int NumberPixels) {
     pid_t pid = fork();
-    if(pid == -1){
+    if (pid == -1) {
         printf("Error al crear worker\n");
-        exit(ERROR);
-    } else if (pid == 0){       //Proceso hijo
-        printf("Creando worker\n");
-        fflush(stdout);
-        printf("Rojo pixel 0: %d\n", pixels[0].r);
-        fflush(stdout);
+        exit(EXIT_FAILURE);
+    } else if (pid == 0) { // Proceso hijo
+        fprintf(stderr, "Proceso hijo creado con PID: %d\n", getpid());
 
         close(pipes1[pipeNumber][WRITE]); // Cerrar el extremo de escritura en el broker-to-worker
-        close(pipes2[pipeNumber][READ]);   // Cerrar el extremo de lectura en el worker-to-broker
+        close(pipes2[pipeNumber][READ]); // Cerrar el extremo de lectura en el worker-to-broker
 
         // Duplicar el descriptor de lectura
-        dup2(pipes1[pipeNumber][READ], STDIN_FILENO);    // Duplicar el descriptor de lectura
-        dup2(pipes2[pipeNumber][WRITE], STDOUT_FILENO);  // Duplicar el descriptor de escritura
+        dup2(pipes1[pipeNumber][READ], STDIN_FILENO); // Duplicar el descriptor de lectura
+        dup2(pipes2[pipeNumber][WRITE], STDOUT_FILENO); // Duplicar el descriptor de escritura
 
         // Ejecutar el worker
-        if(execv("./worker", argv) == -1){            //Echar ojo a los argumentos
+        if (execv("./worker", argv) == -1) {
             printf("Error al ejecutar worker\n");
-            exit(ERROR);
+            exit(EXIT_FAILURE);
         }
 
-        exit(ERROR);
+        exit(EXIT_FAILURE);
 
-    } else {                //Proceso padre
+    } else { // Proceso padre
         size_t dataSize = NumberPixels * sizeof(RGBPixel);
         close(pipes1[pipeNumber][READ]); // Cerrar el extremo de lectura en el broker-to-worker
         close(pipes2[pipeNumber][WRITE]); // Cerrar el extremo de escritura en el worker-to-broker
 
-        if(write(pipes1[pipeNumber][WRITE], pixels, dataSize ) != dataSize){
+        if (write(pipes1[pipeNumber][1], pixels, dataSize) != dataSize) {
             printf("Error al escribir en el pipe\n");
-            exit(ERROR);
-            
+            exit(EXIT_FAILURE);
         }
-        close(pipes1[pipeNumber][WRITE]); // Cerrar el extremo de escritura en el broker-to-worker
+        close(pipes1[pipeNumber][1]); // Cerrar el extremo de escritura en el broker-to-worker
     }
 }
 
@@ -161,19 +127,17 @@ void getPixels(RGBPixel *data, int Npixels, int i, RGBPixel *pixels) {
 
 /* ----- Re-Creacion de create_sons ----- */
 
-void create_sons(int Workers, int **pipesRead, int **pipesWrite,  char *argvW[], char *argvLW[], RGBPixel *data, int Alto) {
+void create_sons(int W, int **pipes1, int **pipes2, char *argvWorker[], char *argvLWorker[], RGBPixel *data, int alto) {
+    int pixelsPerWorker[2];
+    pixels_per_worker(alto, W, pixelsPerWorker);
 
-    int PixelsForWorkers[2];
-    pixels_per_worker(Alto, Workers, PixelsForWorkers);
-    
-    RGBPixel pixels[PixelsForWorkers[0]];
-    for (int i = 0; i < Workers-1; i++){
-        getPixels(data, PixelsForWorkers[0], i, pixels);
-        CreateWorker(pixels, argvW, pipesRead, pipesWrite, i, PixelsForWorkers[0]);
+    for (int i = 0; i < W; i++) {
+        if (i == W - 1) {
+            CreateWorker(data + i * pixelsPerWorker[0], argvLWorker, pipes1, pipes2, i, pixelsPerWorker[1]);
+        } else {
+            CreateWorker(data + i * pixelsPerWorker[0], argvWorker, pipes1, pipes2, i, pixelsPerWorker[0]);
+        }
     }
-    getPixels(data, PixelsForWorkers[1], Workers-1, pixels);
-    CreateWorker(pixels, argvLW, pipesRead, pipesWrite, Workers-1,PixelsForWorkers[1]);
-
 }
 
 /* --------------------------------------- */
@@ -243,3 +207,125 @@ void freeImages(BMPImage *images, int count) {
     }
     free(images); // Liberar el arreglo de imágenes
 }
+
+/*Es posible que haya que revisar el caso de que el lastPixels sea mas pequeño que Npixels*/
+/*
+void readAllPixels(int **pipes, int W, RGBPixel **pixelsArray , int totalPixels, int Npixels, int lastPixels){
+    RGBPixel pixelsArrayRead[Npixels];
+    if (W == 1){
+        if(read(pipes[0][READ], pixelsArrayRead, totalPixels * sizeof(RGBPixel)) != totalPixels * sizeof(RGBPixel)){
+            fprintf(stderr, "Error al leer los pixeles\n");
+            exit(ERROR);
+        }
+        memcpy(pixelsArray[0], pixelsArrayRead, totalPixels * sizeof(RGBPixel));//Esto esta dudoso
+    }
+
+
+    for (int i = 0; i < W-1; i++){
+
+        size_t  dataSize = Npixels * sizeof(RGBPixel);
+        if (read(pipes[i][READ], pixelsArrayRead, dataSize) != dataSize){
+            fprintf(stderr, "Error al leer los pixeles\n");
+            exit(ERROR);
+        }
+        memcpy(pixelsArray[i], pixelsArrayRead, dataSize);
+    }
+    size_t lastDataSize = lastPixels * sizeof(RGBPixel);
+
+    if (read(pipes[W-1][READ], pixelsArrayRead, lastDataSize) != lastDataSize){
+        fprintf(stderr, "ERROR: Last worker\n\n");
+        fprintf(stderr, "Error al leer los pixeles\n");
+        exit(ERROR);
+    }
+    memcpy(pixelsArray[W-1], pixelsArrayRead, lastDataSize);
+}
+*/
+
+/*En teoria esto esta bien, pero no funciona quizas es el worker?
+void readAllPixels(int **pipes1, int W, RGBPixel **pixelsArray, int totalPixels, int pixelsPerWorker, int lastWorkerPixels) {
+    
+    for (int i = 0; i < W; i++) {
+        int numPixels;
+        if (i == W - 1){
+            numPixels = lastWorkerPixels;
+        }else{
+            numPixels = pixelsPerWorker;
+        }
+        RGBPixel pixelsArrayRead[numPixels];
+        size_t dataSize = numPixels * sizeof(RGBPixel);
+
+        if (read(pipes1[i][0], pixelsArrayRead, dataSize) != dataSize) {
+            printf("Error al leer del pipe\n");
+            exit(EXIT_FAILURE);
+        }
+        close(pipes1[i][0]); // Cerrar el extremo de lectura después de leer
+        memcpy(pixelsArray[i], pixelsArrayRead, dataSize);
+    }
+}*/
+
+void readAllPixels(int **pipes, int W, RGBPixel **pixelsArray, int totalPixels, int Npixels, int lastPixels) {
+    RGBPixel *pixelsArrayRead = malloc(Npixels * sizeof(RGBPixel));
+    if (pixelsArrayRead == NULL) {
+        fprintf(stderr, "Error al asignar memoria\n");
+        exit(ERROR);
+    }
+
+    for (int i = 0; i < W - 1; i++) {
+        size_t dataSize = Npixels * sizeof(RGBPixel);
+        if (read(pipes[i][READ], pixelsArrayRead, dataSize) != dataSize) {
+            fprintf(stderr, "Error al leer los píxeles\n");
+            free(pixelsArrayRead);
+            exit(ERROR);
+        }
+        memcpy(pixelsArray[i], pixelsArrayRead, dataSize);
+    }
+
+    if (W == 1){
+        // Si solo hay un worker
+        size_t dataSize = totalPixels * sizeof(RGBPixel);
+        if (read(pipes[0][READ], pixelsArrayRead, dataSize) != dataSize) {
+            fprintf(stderr, "Error al leer los píxeles\n");
+            free(pixelsArrayRead);
+            exit(ERROR);
+        }
+        return;
+    }
+    
+    size_t lastDataSize = lastPixels * sizeof(RGBPixel);
+    if (read(pipes[W-1][READ], pixelsArrayRead, lastDataSize) != lastDataSize) {
+        fprintf(stderr, "ERROR: Last worker\n\n");
+        fprintf(stderr, "Error al leer los píxeles\n");
+        free(pixelsArrayRead);
+        exit(ERROR);
+    }
+    memcpy(pixelsArray[W-1], pixelsArrayRead, lastDataSize);
+
+    free(pixelsArrayRead);
+}
+
+
+void AllPixelsToOne(RGBPixel ** pixelsArray, int W, RGBPixel *NewData ,int Npixels, int lastPixels, int totalPixels){
+    if (W == 1){
+        for (int i = 0; i < totalPixels; i++){
+            NewData[i] = pixelsArray[0][i];
+        }
+    }
+    for (int i = 0; i < W-1; i++){
+        for (int j = 0; j < Npixels; j++){
+            NewData[i * Npixels + j] = pixelsArray[i][j];
+        }
+    }
+    
+    
+    for (int i = 0; i < lastPixels; i++){
+        NewData[(W-1) * Npixels + i] = pixelsArray[W-1][i];
+    }
+}
+
+void freePixelsArray(RGBPixel ** pixelsArray, int W){
+    for (int i = 0; i < W; i++){
+        free(pixelsArray[i]);
+    }
+    free(pixelsArray);
+}
+
