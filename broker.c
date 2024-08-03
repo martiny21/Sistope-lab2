@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
     BMPImage *Images = NULL;
 
-    while (loop < 3)
+    while (loop < 2)
     {
         
         // Crear pipes (Comunicacion bidereccional) // Taria bueno cambiar los nombres para que sean mas descriptivas
@@ -95,6 +95,8 @@ int main(int argc, char *argv[])
         }
         /* ---- RE-ideacion de la solucion --- */
 
+        write_bmp("ImgAntes.bmp", image);
+
         create_sons(W, pipes1, pipes2, argvWorker, argvLWorker, image->data, alto);
         wait_for_workers(W);
 
@@ -104,10 +106,11 @@ int main(int argc, char *argv[])
         fprintf(stdout, "Rojo imagen original %d: %d\n", loop, image->data[0].r);
         fprintf(stderr, "Rojo imagen modificada: %d\n", NewData[0].r);
         /*Funciones a implementar*/
-        BMPImage NewImage = formatImage(NewData, image);    //A lo mejor esto esta malo
+        BMPImage *NewImage = image;// = formatImage(NewData, image);    //A lo mejor esto esta malo
+        write_bmp("imgDespues.bmp", image);
         
 
-        addImage(Images,&loop, NewImage);
+        //addImage(Images,&loop, NewImage);
 
         if (Images == NULL){
             fprintf(stderr, "Error al añadir la imagen\n");

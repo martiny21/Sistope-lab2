@@ -173,11 +173,11 @@ void freeImages(BMPImage *images, int count) {
     free(images); // Liberar el arreglo de imágenes
 }
 */
-BMPImage formatImage(RGBPixel *data, BMPImage *image){
-    BMPImage newImage;
-    newImage.width = image->width;
-    newImage.height = image->height;
-    newImage.data = data;
+BMPImage *formatImage(RGBPixel *data, BMPImage *image){
+    BMPImage *newImage;
+    newImage->width = image->width;
+    newImage->height = image->height;
+    newImage->data = data;
     return newImage;
 }
 
