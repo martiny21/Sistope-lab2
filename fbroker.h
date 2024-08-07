@@ -38,3 +38,5 @@ void readAllPixels(int **pipes1, int W, RGBPixel **ArrayPixels , int totalPixels
 void AllPixelsToOne(RGBPixel ** pixelsArray, int W, RGBPixel * NewData,int pixelsPerWorker, int lastPixels, int totalPixels);
 
 void freePixelsArray(RGBPixel ** pixelsArray, int W);
+
+void *AddImage(BMPImage *Images[], int count, BMPImage *newImage);

@@ -194,6 +194,10 @@ BMPImage * addImage(BMPImage *Images, int *count, BMPImage newImage){
     return Images;
 }
 
+void *AddImage(BMPImage *Images[], int count, BMPImage *newImage){
+    Images[count] = newImage;
+}
+
 void sendImages(BMPImage *Images, int count){
     size_t dataSize = sizeof(BMPImage) * count;
     write(STDOUT_FILENO, Images, dataSize);

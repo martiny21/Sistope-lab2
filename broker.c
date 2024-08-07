@@ -7,6 +7,7 @@ int main(int argc, char *argv[])
     float u = atof(argv[4]), p = atof(argv[3]), v = atof(argv[5]);
     char *UnsgdN = argv[1];  //falta la asignacion de memoria con malloc
     char *N = (char *)malloc(50 * sizeof(char));   //Nombre prefijo imagenes(Imagen)
+    int nImages = atoi(argv[7]);
     int loop = 1; // Verdadero, es una bandera para continuar un ciclo
 
     if(strlen(UnsgdN) >= 50 ){
@@ -38,7 +39,9 @@ int main(int argc, char *argv[])
 
     BMPImage *Images = NULL;
 
-    while (loop < 2)
+    BMPImage *NewImages[nImages + 1];
+
+    while (loop <= nImages)
     {
         
         // Crear pipes (Comunicacion bidereccional) // Taria bueno cambiar los nombres para que sean mas descriptivas
@@ -55,7 +58,7 @@ int main(int argc, char *argv[])
 
         // Concatenar la extension del archivo
         snprintf(resultado + strlen(resultado), sizeof(resultado) - strlen(resultado), "%s", bmp);
-        printf("%s\n", resultado);
+        //printf("%s\n", resultado);
         // Lectura de archivo
         BMPImage *image;
         image = read_bmp(resultado);
@@ -107,12 +110,18 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Rojo imagen modificada: %d\n", NewData[0].r);
         /*Funciones a implementar*/
         BMPImage *NewImage = image;// = formatImage(NewData, image);    //A lo mejor esto esta malo
+        BMPImage New;
+        New.data = image->data;
+        New.height = image->height;
+        New.width = image->width;
         write_bmp("imgDespues.bmp", image);
         
 
-        //addImage(Images,&loop, NewImage);
+        //addImage(Images,&loop, New);
+        AddImage(NewImages, loop, NewImage);
+        //printf("Pixel imagen 1: R: %d  G: %d  B: %d", NewImages[1]->data[0].r, NewImages[1]->data[0].b, NewImages[1]->data[0].g);
 
-        if (Images == NULL){
+        if (NewImages == NULL){
             fprintf(stderr, "Error al añadir la imagen\n");
             freePixelsArray(pixelsArray, W);
             free_pipes(pipes1, W);
@@ -123,19 +132,21 @@ int main(int argc, char *argv[])
         }
 
         /* - - - - - */
-        printf("Rojo imagen modificada %d: %d\n", loop, Images[0].data[0].r);
-        //loop++;
+        //printf("Rojo imagen modificada %d: %d\n", loop, Images[0].data[0].r);
+        loop++;
         
         freePixelsArray(pixelsArray, W);
         free_pipes(pipes1, W);
         free_pipes(pipes2, W);
         free(image->data);
         free(image);
+        
+        fflush(stdout);
     }
 
     
-    sendImages(Images, loop);
-    freeImages(Images,loop);
+    //sendImages(Images, loop);
+    //freeImages(Images,loop);
     /* - - - - - */
 
     free(N);
