@@ -39,7 +39,10 @@ RGBPixel grayScale_pixel(RGBPixel pixel)
 {
     RGBPixel new_pixel;
     unsigned char gray = (unsigned char)(pixel.r * 0.3 + pixel.g * 0.59 + pixel.b * 0.11);
-
+    if (gray > 255)
+    {
+        gray = 255;
+    }
     new_pixel.r = gray;
     new_pixel.g = gray;
     new_pixel.b = gray;

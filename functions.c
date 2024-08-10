@@ -72,30 +72,50 @@ void write_bmp(const char* filename, BMPImage* image) {
 
     BMPHeader header;
     header.type = 0x4D42;
-    header.size = sizeof(BMPHeader) + sizeof(BMPInfoHeader) + image->width * image->height * sizeof(RGBPixel);
+    int padding = (4 - (image->width * sizeof(RGBPixel)) % 4) % 4;
+    header.size = sizeof(BMPHeader) + sizeof(BMPInfoHeader) + (image->width * sizeof(RGBPixel) + padding) * image->height;
+    header.reserved1 = 0;
+    header.reserved2 = 0;
     header.offset = sizeof(BMPHeader) + sizeof(BMPInfoHeader);
+    
 
-    BMPInfoHeader info_header;
+    
+    BMPInfoHeader info_header = {0};
     info_header.size = sizeof(BMPInfoHeader);
     info_header.width = image->width;
     info_header.height = image->height;
     info_header.planes = 1;
-    info_header.bit_count = 24; // está fijado en 24 en este ejemplo pero puede ser 1, 4, 8, 16, 24 o 32
-    info_header.size_image = image->width * image->height * sizeof(RGBPixel);
+    info_header.bit_count = 24;
+    info_header.compression = 0;
+    info_header.size_image = (image->width * sizeof(RGBPixel) + padding) * image->height;
+    info_header.x_pixels_per_meter = 0;
+    info_header .y_pixels_per_meter = 0;
+    info_header.colors_used = 0;
+    info_header.colors_important = 0;
 
-    fwrite(&header, sizeof(BMPHeader), 1, file);
-    fwrite(&info_header, sizeof(BMPInfoHeader), 1, file);
-
-    int padding = (4 - (image->width * sizeof(RGBPixel)) % 4) % 4;
-    for (int y = image->height - 1; y >= 0; y--) {
-        for (int x = 0; x < image->width; x++) {
-            RGBPixel pixel = image->data[y * image->width + x];
-            fwrite(&pixel, sizeof(RGBPixel), 1, file);
-        }
-
-        RGBPixel padding_pixel = {0};
-        fwrite(&padding_pixel, sizeof(RGBPixel), padding, file);
+    if (fwrite(&header, sizeof(BMPHeader), 1, file) != 1) {
+    fprintf(stderr, "Error: No se pudo escribir el encabezado.\n");
+    fclose(file);
+    return;
     }
+
+    if (fwrite(&info_header, sizeof(BMPInfoHeader), 1, file) != 1) {
+        fprintf(stderr, "Error: No se pudo escribir el encabezado de información.\n");
+        fclose(file);
+        return;
+    }
+
+
+    for (int y = image->height - 1; y >= 0; y--) {
+    fwrite(&image->data[y * image->width], sizeof(RGBPixel), image->width, file);
+
+    // Escribe el padding como bytes cero
+    uint8_t padding_byte = 0;
+    for (int p = 0; p < padding; p++) {
+        fwrite(&padding_byte, sizeof(uint8_t), 1, file);
+        }
+    }
+
 
     fclose(file);
 }

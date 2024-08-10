@@ -59,19 +59,16 @@ Descripcion: Funcion que calcula la cantidad de pixeles para cada worker basado 
 Entrada: Alto de la imagen, cantidad de workers, arreglo de numeros de pixeles
 Salida: N/A
 */
-void pixels_per_worker(int alto, int W, int *pixels){ 
-    int fragmentoWorkers = alto / W; //Cantidad de pixeles que corresponden a cada worker
-    int UltimoWorker ; //Cantidad de pixeles que le corresponden al ultimo worker (Se encarga de las columnas restantes)
-    
-    if (alto % W == 0) {
-        UltimoWorker = fragmentoWorkers;
-    }else{
-        UltimoWorker = alto % W;
-    }
+void pixels_per_worker(int alto, int ancho, int W, int *pixels){ 
+    int Workers = ancho / W; //Cantidad de pixeles que corresponden a cada worker
+    //Cantidad de pixeles que le corresponden al ultimo worker (Se encarga de las columnas restantes)
+    int fragmentoWorkers = Workers * alto;
+    int UltimoWorker = (alto * ancho) - (fragmentoWorkers * W-1);
     
     pixels[0] = fragmentoWorkers;
     pixels[1] = UltimoWorker;
 }
+
 /* ---- RE-RE-Implementacion ---- */
 void CreateWorker(RGBPixel *pixels, char *argv[], int **pipes1, int **pipes2, int pipeNumber, int NumberPixels) {
     pid_t pid = fork();
@@ -98,6 +95,8 @@ void CreateWorker(RGBPixel *pixels, char *argv[], int **pipes1, int **pipes2, in
 
     } else { // Proceso padre
         size_t dataSize = NumberPixels * sizeof(RGBPixel);
+        RGBPixel NewPixels[NumberPixels];
+        memcpy(NewPixels, pixels, dataSize);
         close(pipes1[pipeNumber][READ]); // Cerrar el extremo de lectura en el broker-to-worker
         close(pipes2[pipeNumber][WRITE]); // Cerrar el extremo de escritura en el worker-to-broker
 
@@ -127,13 +126,13 @@ void getPixels(RGBPixel *data, int Npixels, int i, RGBPixel *pixels) {
 
 /* ----- Re-Creacion de create_sons ----- */
 
-void create_sons(int W, int **pipes1, int **pipes2, char *argvWorker[], char *argvLWorker[], RGBPixel *data, int alto) {
+void create_sons(int W, int **pipes1, int **pipes2, char *argvWorker[], char *argvLWorker[], RGBPixel *data, int alto, int ancho) {
     int pixelsPerWorker[2];
-    pixels_per_worker(alto, W, pixelsPerWorker);
+    pixels_per_worker(alto, ancho,W, pixelsPerWorker);
 
     for (int i = 0; i < W; i++) {
         if (i == W - 1) {
-            CreateWorker(data + i * pixelsPerWorker[0], argvLWorker, pipes1, pipes2, i, pixelsPerWorker[1]);
+            CreateWorker(data + i * pixelsPerWorker[1], argvLWorker, pipes1, pipes2, i, pixelsPerWorker[1]);
         } else {
             CreateWorker(data + i * pixelsPerWorker[0], argvWorker, pipes1, pipes2, i, pixelsPerWorker[0]);
         }
@@ -174,10 +173,17 @@ void freeImages(BMPImage *images, int count) {
 }
 */
 BMPImage *formatImage(RGBPixel *data, BMPImage *image){
-    BMPImage *newImage;
+    BMPImage *newImage = malloc(sizeof(BMPImage));
     newImage->width = image->width;
     newImage->height = image->height;
-    newImage->data = data;
+    newImage->data = malloc(image->width * image->height * sizeof(RGBPixel));
+    if (newImage->data == NULL){
+        fprintf(stderr, "Error al asignar memoria\n");
+        exit(ERROR);
+    }
+    for(int i = 0; i < image->width * image->height; i++){
+        newImage->data[i] = data[i];
+    }
     return newImage;
 }
 
@@ -273,57 +279,84 @@ void readAllPixels(int **pipes, int W, RGBPixel **pixelsArray, int totalPixels, 
         fprintf(stderr, "Error al asignar memoria\n");
         exit(ERROR);
     }
-
-    for (int i = 0; i < W - 1; i++) {
-        size_t dataSize = Npixels * sizeof(RGBPixel);
-        if (read(pipes[i][READ], pixelsArrayRead, dataSize) != dataSize) {
-            fprintf(stderr, "Error al leer los píxeles\n");
+    if (W == 1)
+    {
+        if (read(pipes[0][READ], pixelsArrayRead, totalPixels * sizeof(RGBPixel)) != totalPixels * sizeof(RGBPixel))
+        {
+            fprintf(stderr, "Broker: Error al leer los píxeles\n");
             free(pixelsArrayRead);
             exit(ERROR);
         }
-        memcpy(pixelsArray[i], pixelsArrayRead, dataSize);
-    }
-
-    if (W == 1){
-        // Si solo hay un worker
-        size_t dataSize = totalPixels * sizeof(RGBPixel);
-        if (read(pipes[0][READ], pixelsArrayRead, dataSize) != dataSize) {
-            fprintf(stderr, "Error al leer los píxeles\n");
-            free(pixelsArrayRead);
-            exit(ERROR);
-        }
+        memcpy(pixelsArray[0], pixelsArrayRead, totalPixels * sizeof(RGBPixel));
+        //Imprimir pixels
+        printPixels(pixelsArray[0], totalPixels);
         return;
     }
-    
-    size_t lastDataSize = lastPixels * sizeof(RGBPixel);
-    if (read(pipes[W-1][READ], pixelsArrayRead, lastDataSize) != lastDataSize) {
-        fprintf(stderr, "ERROR: Last worker\n\n");
-        fprintf(stderr, "Error al leer los píxeles\n");
-        free(pixelsArrayRead);
-        exit(ERROR);
-    }
-    memcpy(pixelsArray[W-1], pixelsArrayRead, lastDataSize);
+    int k = 0;
+    for (int j = 0; j < W; j++) {
 
-    free(pixelsArrayRead);
+        if(j == W - 1){
+            if (read(pipes[j][READ], pixelsArrayRead, lastPixels * sizeof(RGBPixel)) != lastPixels * sizeof(RGBPixel)) {
+                fprintf(stderr, "Broker: Error al leer los píxeles\n");
+                free(pixelsArrayRead);
+                exit(ERROR);
+            }
+            memcpy(pixelsArray[j], pixelsArrayRead, lastPixels * sizeof(RGBPixel));
+            //Imprimir pixels
+            //printPixels(pixelsArray[j], lastPixels);
+        }else{
+            if (read(pipes[j][READ], pixelsArrayRead, Npixels * sizeof(RGBPixel)) != Npixels * sizeof(RGBPixel)) {
+                fprintf(stderr, "Broker: Error al leer los píxeles\n");
+                free(pixelsArrayRead);
+                exit(ERROR);
+            }
+            memcpy(pixelsArray[j], pixelsArrayRead, Npixels * sizeof(RGBPixel));
+            //fprintf(stderr, "Worker %d\n", j);
+            //fprintf(stderr, "Npixels: %d\n", Npixels);
+            //printPixels(pixelsArray[j], Npixels);
+            
+        }
+        //fprintf(stderr, "k:%d\n",k);
+        k++;
+    }
+    //free(pixelsArrayRead);
 }
 
 
 void AllPixelsToOne(RGBPixel ** pixelsArray, int W, RGBPixel *NewData ,int Npixels, int lastPixels, int totalPixels){
-    if (W == 1){
-        for (int i = 0; i < totalPixels; i++){
-            NewData[i] = pixelsArray[0][i];
+    /*fprintf(stderr, "Pixeles entrantes:");
+    fprintf(stderr, "Npixels: %d\n", Npixels);
+    fprintf(stderr, "W: %d\n", W);
+    for (int j = 0; j < W; j++){
+        if(j == W - 1){
+            printPixels(pixelsArray[j], lastPixels);
+        }else{
+            printPixels(pixelsArray[j], Npixels);
+        }
+        fprintf(stderr, "Worker %d\n", j);
+    }
+    */
+    if(W == 1){
+        memcpy(NewData, pixelsArray[0], totalPixels * sizeof(RGBPixel));
+        return;
+    }
+
+    for (int i = 0; i < W; i++){
+        if(i == W - 1){
+            memcpy(NewData + i * Npixels, pixelsArray[i], lastPixels * sizeof(RGBPixel));
+        }else{
+            memcpy(NewData + i * Npixels, pixelsArray[i], Npixels * sizeof(RGBPixel));
         }
     }
-    for (int i = 0; i < W-1; i++){
-        for (int j = 0; j < Npixels; j++){
-            NewData[i * Npixels + j] = pixelsArray[i][j];
-        }
+
+}
+
+void printPixels(RGBPixel *pixels, int N){
+    int i;
+    for (i = 0; i < N; i++){
+        fprintf(stderr,"R: %d, G: %d, B: %d\n", pixels[i].r, pixels[i].g, pixels[i].b);
     }
-    
-    
-    for (int i = 0; i < lastPixels; i++){
-        NewData[(W-1) * Npixels + i] = pixelsArray[W-1][i];
-    }
+    fprintf(stderr, "total: %d\n", i+1);
 }
 
 void freePixelsArray(RGBPixel ** pixelsArray, int W){

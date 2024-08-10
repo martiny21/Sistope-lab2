@@ -15,7 +15,7 @@ void free_pipes(int **pipes, int w);
 
 void wait_for_workers(int W);
 
-void pixels_per_worker(int alto, int W, int *pixels);
+void pixels_per_worker(int alto, int ancho, int W, int *pixels);
 
 /* Improvisando */
 
@@ -23,7 +23,7 @@ void CreateWorker(RGBPixel *pixels, char *argvW[], int **pipesRead, int **pipesW
 
 void getPixels(RGBPixel *data, int Npixels, int i, RGBPixel *pixels);
 
-void create_sons(int Workers, int **pipesRead, int **pipesWrite, char *argvW[], char *argvLW[], RGBPixel *data, int Alto);
+void create_sons(int Workers, int **pipesRead, int **pipesWrite, char *argvW[], char *argvLW[], RGBPixel *data, int Alto, int ancho);
 
 BMPImage * addImage(BMPImage *Images, int *count, BMPImage newImage);
 
@@ -40,3 +40,5 @@ void AllPixelsToOne(RGBPixel ** pixelsArray, int W, RGBPixel * NewData,int pixel
 void freePixelsArray(RGBPixel ** pixelsArray, int W);
 
 void *AddImage(BMPImage *Images[], int count, BMPImage *newImage);
+
+void printPixels(RGBPixel *pixels, int Npixels);

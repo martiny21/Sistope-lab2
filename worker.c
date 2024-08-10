@@ -19,7 +19,7 @@ int main(int argc, char *argv[]){
     fprintf(stderr, "Worker: Npixels=%d\n", Npixels);
     /* ----- RE-Implementacion ----- */
     
-    RGBPixel pixels[Npixels];
+    RGBPixel *pixels = (RGBPixel*)malloc(Npixels * sizeof(RGBPixel));
     size_t dataSize = Npixels * sizeof(RGBPixel);
 
 
@@ -29,7 +29,7 @@ int main(int argc, char *argv[]){
     if (bytes_read == -1) {
         perror("Error al leer datos del pipe");
         exit(ERROR);
-    } else if (bytes_read != sizeof(pixels)) {
+    } else if (bytes_read != dataSize) {
         fprintf(stderr, "Error: no se leyeron todos los datos del pipe\n");     //stderr es "standard error"
         exit(ERROR);
     }

@@ -131,9 +131,10 @@ int main(int argc, char *argv[]){
 
     //Contar imágenes
     int nImages = CountImages(N);
-    char StrImages[20];
+    char StrImages[100];
     sprintf(StrImages, "%d", nImages);
-
+    //Concatenar .csv a R
+    strcat(R, ".csv");
     //Creacion archivo CSV
     FILE *fileCSV;
     fileCSV = fopen(R, "w"); // Abre el archivo en modo escritura ("w"), se cierra al finalizar el programa

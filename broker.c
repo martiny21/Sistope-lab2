@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
         
         
         int pixelsPerWorker[2];
-        pixels_per_worker(alto, W, pixelsPerWorker);
+        pixels_per_worker(alto, ancho,W, pixelsPerWorker);
 
         char StrNPixels[40];
         char StrLPixels[40];
@@ -93,32 +93,45 @@ int main(int argc, char *argv[])
 
 
         RGBPixel **pixelsArray = malloc(W * sizeof(RGBPixel *));
-        for (int i = 0; i < W; i++) {
+        for (int i = 0; i < W-1; i++) {
             pixelsArray[i] = malloc(Npixels * sizeof(RGBPixel));
         }
+        pixelsArray[W-1] = malloc(pixelsPerWorker[1] * sizeof(RGBPixel));
         /* ---- RE-ideacion de la solucion --- */
 
         write_bmp("ImgAntes.bmp", image);
-
-        create_sons(W, pipes1, pipes2, argvWorker, argvLWorker, image->data, alto);
+        //Aqui
+        create_sons(W, pipes1, pipes2, argvWorker, argvLWorker, image->data, alto, ancho);
         wait_for_workers(W);
 
         readAllPixels(pipes2, W, pixelsArray ,ancho * alto, pixelsPerWorker[0] ,pixelsPerWorker[1]);
         AllPixelsToOne(pixelsArray, W, NewData ,pixelsPerWorker[0], pixelsPerWorker[1], ancho * alto);
-
-        fprintf(stdout, "Rojo imagen original %d: %d\n", loop, image->data[0].r);
+        //Aqui
+        fprintf(stderr, "Rojo imagen original %d: %d\n", loop, image->data[0].r);
         fprintf(stderr, "Rojo imagen modificada: %d\n", NewData[0].r);
         /*Funciones a implementar*/
-        BMPImage *NewImage = image;// = formatImage(NewData, image);    //A lo mejor esto esta malo
-        BMPImage New;
-        New.data = image->data;
-        New.height = image->height;
-        New.width = image->width;
-        write_bmp("imgDespues.bmp", image);
+        BMPImage nuevaImagen;
+        nuevaImagen.width = ancho;
+        nuevaImagen.height = alto;
+
+        nuevaImagen.data = malloc(sizeof(RGBPixel) * ancho * alto);
+        if (nuevaImagen.data == NULL) {
+            fprintf(stderr, "Error al asignar memoria para la imagen\n");
+            freePixelsArray(pixelsArray, W);
+            free_pipes(pipes1, W);
+            free_pipes(pipes2, W);
+            free(image->data);
+            free(image);
+            return 1;
+        }
+
+        memcpy(nuevaImagen.data, NewData, sizeof(RGBPixel) * ancho * alto);
+        
+        write_bmp("ImgDespues.bmp", &nuevaImagen);
         
 
         //addImage(Images,&loop, New);
-        AddImage(NewImages, loop, NewImage);
+        //AddImage(NewImages, loop, NewImage);
         //printf("Pixel imagen 1: R: %d  G: %d  B: %d", NewImages[1]->data[0].r, NewImages[1]->data[0].b, NewImages[1]->data[0].g);
 
         if (NewImages == NULL){
