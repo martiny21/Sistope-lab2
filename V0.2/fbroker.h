@@ -46,7 +46,7 @@ void printPixels(RGBPixel *pixels, int Npixels);
 
 /* Todo bonito*/
 
-BMPImage processImage(BMPImage *image, int W, char *argv[]);
+BMPImage *processImage(BMPImage *image, int W, char *argv[]);
 
 void processPixels(RGBPixel *data, int totalPixels, int W, int *pixelsPerWorker, RGBPixel *NewData, char *argv[]);
 

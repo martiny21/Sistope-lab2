@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
         int ancho = image->width;
         int alto = image->height;
 
-        BMPImage *NewImage = ProcessImage(image, W, argv);
+        BMPImage *NewImage = processImage(image, W, argv);
         
         
         int pixelsPerWorker[2];

@@ -375,7 +375,7 @@ void freePixelsArray(RGBPixel ** pixelsArray, int W){
 
 /* Todo Bonito */
 
-BMPImage processImage(BMPImage *image, int W, char *argv[]){
+BMPImage *processImage(BMPImage *image, int W, char *argv[]){
     int pixelsPerWorker[2];
     pixels_per_worker(image->height, image->width, W, pixelsPerWorker);
 
@@ -385,14 +385,14 @@ BMPImage processImage(BMPImage *image, int W, char *argv[]){
         fprintf(stderr, "Error al asignar memoria\n");
         exit(ERROR);
     }
-    proccesPixels(image->data, totalPixels, W, pixelsPerWorker, NewData, argv);
+    processPixels(image->data, totalPixels, W, pixelsPerWorker, NewData, argv);
 
     BMPImage newImage;
     newImage.width = image->width;
     newImage.height = image->height;
     newImage.data = NewData;
 
-    return newImage;
+    return &newImage;
 }
 
 void processPixels(RGBPixel *data, int totalPixels, int W, int *pixelsPerWorker, RGBPixel *NewData, char *argv[]){

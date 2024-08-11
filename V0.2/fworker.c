@@ -9,19 +9,20 @@ Salida: Pixel saturado
 RGBPixel saturate_pixel(float factor, RGBPixel pixel)
 {
     RGBPixel new_pixel;
-    new_pixel.r = pixel.r * factor;
-    new_pixel.g = pixel.g * factor;
-    new_pixel.b = pixel.b * factor;
 
-    if (new_pixel.r > 255)
+    pixel.r = pixel.r * factor;
+    pixel.g = pixel.g * factor;
+    pixel.b = pixel.b * factor;
+
+    if (pixel.r > 255)
     {
         new_pixel.r = (unsigned char)255;
     }
-    if (new_pixel.g > 255)
+    if (pixel.g > 255)
     {
         new_pixel.g = (unsigned char)255;
     }
-    if (new_pixel.b > 255)
+    if (pixel.b > 255)
     {
         new_pixel.b = (unsigned char)255;
     }
@@ -78,10 +79,10 @@ RGBPixel binarize_pixel(float factor, RGBPixel pixel)
     return new_pixel;
 }
 
-RGBPixel * saturate_pixels(RGBPixel *pixels, int Npixels, float factor)
-{   
+RGBPixel *saturate_pixels(RGBPixel *pixels, int Npixels, float factor)
+{
 
-    RGBPixel *new_pixels = (RGBPixel*)malloc(sizeof(RGBPixel) * Npixels);
+    RGBPixel *new_pixels = (RGBPixel *)malloc(sizeof(RGBPixel) * Npixels);
     for (int i = 0; i < Npixels; i++)
     {
         new_pixels[i] = saturate_pixel(factor, pixels[i]);
@@ -90,9 +91,9 @@ RGBPixel * saturate_pixels(RGBPixel *pixels, int Npixels, float factor)
     return new_pixels;
 }
 
-RGBPixel * grayScale_pixels(RGBPixel *pixels, int Npixels)
+RGBPixel *grayScale_pixels(RGBPixel *pixels, int Npixels)
 {
-    RGBPixel *new_pixels = (RGBPixel*)malloc(sizeof(RGBPixel) * Npixels);
+    RGBPixel *new_pixels = (RGBPixel *)malloc(sizeof(RGBPixel) * Npixels);
     for (int i = 0; i < Npixels; i++)
     {
         new_pixels[i] = grayScale_pixel(pixels[i]);
@@ -100,11 +101,11 @@ RGBPixel * grayScale_pixels(RGBPixel *pixels, int Npixels)
     return new_pixels;
 }
 
-RGBPixel * binarize_pixels(RGBPixel *pixels, int Npixels, float factor)
+RGBPixel *binarize_pixels(RGBPixel *pixels, int Npixels, float factor)
 {
-    RGBPixel *new_pixels = (RGBPixel*)malloc(sizeof(RGBPixel) * Npixels);
+    RGBPixel *new_pixels = (RGBPixel *)malloc(sizeof(RGBPixel) * Npixels);
     for (int i = 0; i < Npixels; i++)
-    {   
+    {
         new_pixels[i] = binarize_pixel(factor, pixels[i]);
     }
 
