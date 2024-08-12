@@ -27,9 +27,11 @@ int main(int argc, char *argv[])
 
 
     // Variables para concatenacion de cadenas de caracteres
+    char Final[20] = "Final";
     char bmp[20] = ".bmp";
     char signo = '_';
     char resultado[100]; // Se mantiene la declaración de resultado
+    char resultadoFInal[100];
 
     
     resultado[0] = '\0';
@@ -43,12 +45,15 @@ int main(int argc, char *argv[])
 
         // Concatenar prefijo (N) y símbolo _
         snprintf(resultado, sizeof(resultado), "%s%c", N, signo);
+        snprintf(resultadoFInal, sizeof(resultadoFInal), "%s", Final);
 
         // Concatenar el número de loop con resultado
         snprintf(resultado + strlen(resultado), sizeof(resultado) - strlen(resultado), "%d", loop);
+        snprintf(resultadoFInal + strlen(resultadoFInal), sizeof(resultadoFInal) - strlen(resultadoFInal), "%d", loop);
 
         // Concatenar la extension del archivo
         snprintf(resultado + strlen(resultado), sizeof(resultado) - strlen(resultado), "%s", bmp);
+        snprintf(resultadoFInal + strlen(resultadoFInal), sizeof(resultadoFInal) - strlen(resultadoFInal), "%s", bmp);
         
         // Lectura de archivo
         BMPImage *image;
@@ -65,7 +70,7 @@ int main(int argc, char *argv[])
 
         BMPImage NewImage = processImage(image, W, argv);
         
-        write_bmp("resultado.bmp", &NewImage);
+        write_bmp(resultadoFInal, &NewImage);
         
        
 

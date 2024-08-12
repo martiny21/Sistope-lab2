@@ -9,25 +9,44 @@ Salida: Pixel saturado
 RGBPixel saturate_pixel(float factor, RGBPixel pixel)
 {
     RGBPixel new_pixel;
-    pixel.r = pixel.r * factor;
-    pixel.g = pixel.g * factor;
-    pixel.b = pixel.b * factor;
 
-    if (pixel.r > 255)
+    // Multiplicamos los valores originales por el factor
+    float r = pixel.r * factor;
+    float g = pixel.g * factor;
+    float b = pixel.b * factor;
+
+    // Limitamos cada canal a un máximo de 255
+    if (r > 255)
     {
-        new_pixel.r = (unsigned char)255;
+        new_pixel.r = 255;
     }
-    if (pixel.g > 255)
+    else
     {
-        new_pixel.g = (unsigned char)255;
+        new_pixel.r = (unsigned char)r;
     }
-    if (pixel.b > 255)
+
+    if (g > 255)
     {
-        new_pixel.b = (unsigned char)255;
+        new_pixel.g = 255;
+    }
+    else
+    {
+        new_pixel.g = (unsigned char)g;
+    }
+
+    if (b > 255)
+    {
+        new_pixel.b = 255;
+    }
+    else
+    {
+        new_pixel.b = (unsigned char)b;
     }
 
     return new_pixel;
 }
+
+
 
 /*
 Descripcion: Función que realiza la conersión de un pixel de una

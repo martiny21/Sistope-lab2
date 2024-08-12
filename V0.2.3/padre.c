@@ -112,8 +112,27 @@ int main(int argc, char *argv[]){
         return 0;
     }
 
+    //Verificar que se ingrese una cantidad de Workers valida
     if(W <= 0) {
         printf("Por favor ingrese un valor entero mayor que 0 para W\n");
+        return 0;
+    }
+
+    //Verificar que se ingrese una factor de saturación valido
+    if(p <= 0) {
+        printf("Por favor ingrese un valor entero mayor que 0 para el factor de saturación (p)\n");
+        return 0;
+    }
+
+    //Verificar que el umbral de binarización esté dentro de un rango valido
+    if(u > 1 || u < 0) {
+        printf("Por favor ingrese un valor entre 0 y 1 para el umbral de binarización (u)\n");
+        return 0;
+    }
+
+    //Verificar que el umbral de clasificación esté dentro de un rango valido
+    if(v > 1 || u < 0) {
+        printf("Por favor ingrese un valor entre 0 y 1 para el umbral de clasificación (v)\n");
         return 0;
     }
 
@@ -147,10 +166,9 @@ int main(int argc, char *argv[]){
         return 0;
     }
 
-
-
     //Archivo CSV con 2 columnas
     fprintf(fileCSV, "Nombre Imagen,Clasificacion\n");
+
     //esto tambien se puede hacer funcion
     sprintf(fStr,"%d",f);
     sprintf(WStr,"%d",W);
@@ -197,7 +215,7 @@ int main(int argc, char *argv[]){
 
     //Images = receiveImages(fd, numImages);
 
-    printf("Rojo imagen modificada 0: %d\n", Images[0].data[0].r);
+    //printf("Rojo imagen modificada 0: %d\n", Images[0].data[0].r);
     fflush(stdout);
 
 
