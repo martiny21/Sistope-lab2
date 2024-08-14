@@ -17,22 +17,22 @@ int main(int argc, char *argv[]){
         RGBPixel *Buffer = (RGBPixel*)malloc(sizeof(RGBPixel)*numPixels);
         read(STDIN_FILENO,Buffer,sizeof(RGBPixel)*numPixels);
 
-        RGBPixel *NewPixels = NULL;
+        RGBPixel *NewPixels = Buffer;
         switch (f)
         {
             case 1:
                 
-                NewPixels = saturate_pixels(Buffer,numPixels,p);
+                NewPixels = saturate_pixels(NewPixels,numPixels,p);
                 break;
             case 2:
-                NewPixels = saturate_pixels(Buffer,numPixels,p);
-                NewPixels = grayScale_pixels(Buffer,numPixels);
+                NewPixels = saturate_pixels(NewPixels,numPixels,p);
+                NewPixels = grayScale_pixels(NewPixels,numPixels);
                 break;
             case 3:
                 float u = atof(argv[3]);
-                NewPixels = saturate_pixels(Buffer,numPixels,p);
-                NewPixels = grayScale_pixels(Buffer,numPixels);
-                NewPixels = binarize_pixels(Buffer,numPixels,u);
+                NewPixels = saturate_pixels(NewPixels,numPixels,p);
+                NewPixels = grayScale_pixels(NewPixels,numPixels);
+                NewPixels = binarize_pixels(NewPixels,numPixels,u);
                 break;
         
             default:
