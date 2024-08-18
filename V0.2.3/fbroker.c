@@ -133,6 +133,11 @@ void processPixels(RGBPixel *data, int totalPixels, int W, int *pixelsPerWorker,
     
 }
 
+/*
+Entrada: arreglo de pixeles, cantidad de pixeles, argumentos para el worker, iterador, arreglo de pixeles nuevo
+Salida: no hay
+Descripcion: Crea un worker, con sus pipes, y le envia los pixeles que le corresponden
+*/
 void CreateWorker(RGBPixel *data, int NumberPixels, char *argv[], int iterator, RGBPixel *NewData){
     int brokerToWorker[2]; // Pipe del broker al worker
     int workerToBroker[2]; // Pipe del worker al broker
@@ -179,6 +184,12 @@ void CreateWorker(RGBPixel *data, int NumberPixels, char *argv[], int iterator, 
     return;
 }
 
+/*
+Entrada: pipe del broker al worker, pipe del worker al broker, cantidad de pixeles, arreglo de pixeles,
+arreglo de pixeles nuevo, argumentos para el worker
+Salida: no hay
+Descripcion: Se duplican los descriptores de archivo y se ejecuta el worker
+*/
 void workerProcess(int *BrokerToWorker, int *WorkerToBroker, int numberPixels ,RGBPixel *data, RGBPixel *NewData, char *argv[]){
     // Duplicar el descriptor de lectura
     dup2(BrokerToWorker[READ], STDIN_FILENO); // Duplicar el descriptor de lectura
@@ -193,7 +204,12 @@ void workerProcess(int *BrokerToWorker, int *WorkerToBroker, int numberPixels ,R
     exit(EXIT_FAILURE);
 }
 
-
+/*
+Entrada: pipe del broker al worker, pipe del worker al broker, cantidad de pixeles, arreglo de pixeles,
+arreglo de pixeles nuevo, argumentos para el worker
+Salida: no hay
+Descripcion: Se envian de a 100 pixeles al worker y luego se reciben los pixeles ya procesados
+*/
 void brokerProcess(int *BrokerToWorker, int *WorkerToBroker, int numberPixels, RGBPixel *data, RGBPixel *NewData, char *argv[]){
     int PixelsSent = 0;
 
@@ -241,6 +257,11 @@ void brokerProcess(int *BrokerToWorker, int *WorkerToBroker, int numberPixels, R
     close(WorkerToBroker[0]); // Cerrar el extremo de lectura en workerToBroker
 }
 
+/*
+Entrada: sub-arreglo de pixeles, arreglo de pixeles, cantidad de pixeles, pixeles listos
+Salida: no hay
+Descripcion: Se copian los pixeles de un arreglo a otro
+*/
 void putPixels(RGBPixel *SubData, RGBPixel *data, int numberPixels, int PixelsReady){
     memcpy(data + PixelsReady, SubData, numberPixels * sizeof(RGBPixel));
 }

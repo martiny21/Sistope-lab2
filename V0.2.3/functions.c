@@ -132,9 +132,9 @@ void write_bmp(const char *filename, BMPImage *image)
 /*
 Entrada: imagen tipo BMPImage y un umbral (factor) de clasificacion
 Salida: entero, 1 si es una imagen calificada como nearly black, 0 en caso contrario
-Descripcion: se clasifica una imagen usando un umbral (o factor) como referencia, si el pixel tiene
-un valor  mayor a este, se aumenta cont1, es decir, se haya pixel blanco, por el contrario, se asigna 0, indicando
-un pixel negro
+Descripcion: Se recorre la imagen y se cuentan los pixeles que cumplen con el umbral
+de clasificacion, si la cantidad de pixeles que cumplen con el umbral es mayor a los que no
+cumplen, se clasifica la imagen como nearly black
 */
 int nearly_black(BMPImage *image, float factor)
 {
@@ -151,11 +151,11 @@ int nearly_black(BMPImage *image, float factor)
             // Verificar si el pixel pasa el umbral
             if ((pixel.r > umbral && pixel.g > umbral) && pixel.b > umbral)
             {
-                cont1++;
+                cont2++;
             }
             else
             {
-                cont2++;
+                cont1++;
             }
         }
     }
