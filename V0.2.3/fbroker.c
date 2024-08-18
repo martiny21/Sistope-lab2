@@ -17,8 +17,6 @@ void wait_for_workers(int W) {
     }
 }
 
-
-
 /*
 Descripcion: Funcion que calcula la cantidad de pixeles para cada worker basado en en M % W
     - Pixels[0] = Cantidad de pixeles que le corresponden a cada worker a excepcion del ultimo
@@ -63,14 +61,6 @@ void free_pipes(int** pipes, int w) {
     free(pipes);
 }
 
-
-void sendImages(BMPImage *Images, int count){
-    size_t dataSize = sizeof(BMPImage) * count;
-    write(STDOUT_FILENO, Images, dataSize);
-    close(STDOUT_FILENO);
-    
-}
-
 void freeImages(BMPImage *images, int count) {
     for (int i = 0; i < count; i++) {
         free(images[i].data); // Liberar datos de la imagen si fueron asignados dinámicamente
@@ -94,7 +84,13 @@ void freePixelsArray(RGBPixel ** pixelsArray, int W){
 }
 
 /* Todo Bonito */
-
+/*
+Descripción: Se procesa una imagen calculando la cantidad de pixeles que
+le corresponden a cada worker, para que estos procesen los pixeles y
+retornar la nueva imagen
+Entrada: imagen tipo bmp, cantidad de workers, argv
+Salida: Imagen bmp procesado
+*/
 BMPImage processImage(BMPImage *image, int W, char *argv[]){
     int pixelsPerWorker[2];
     pixels_per_worker(image->height, image->width, W, pixelsPerWorker);
@@ -184,8 +180,6 @@ void CreateWorker(RGBPixel *data, int NumberPixels, char *argv[], int iterator, 
 }
 
 void workerProcess(int *BrokerToWorker, int *WorkerToBroker, int numberPixels ,RGBPixel *data, RGBPixel *NewData, char *argv[]){
-
-
     // Duplicar el descriptor de lectura
     dup2(BrokerToWorker[READ], STDIN_FILENO); // Duplicar el descriptor de lectura
     dup2(WorkerToBroker[WRITE], STDOUT_FILENO); // Duplicar el descriptor de escritura
@@ -201,8 +195,6 @@ void workerProcess(int *BrokerToWorker, int *WorkerToBroker, int numberPixels ,R
 
 
 void brokerProcess(int *BrokerToWorker, int *WorkerToBroker, int numberPixels, RGBPixel *data, RGBPixel *NewData, char *argv[]){
-
-
     int PixelsSent = 0;
 
     size_t numberSent = 100;
@@ -217,91 +209,7 @@ void brokerProcess(int *BrokerToWorker, int *WorkerToBroker, int numberPixels, R
     getPixels(data, numberSent, 0, subData);
 
     RGBPixel Buffer[numberSent];
-    /*
-    int iterator = 1;
-    //Crear ciclo que vaya enviando de a 1000 pixeles
-    write(BrokerToWorker[WRITE], &numberSent, sizeof(size_t));
-
-    write(BrokerToWorker[WRITE], subData, numberSent * sizeof(RGBPixel));
-
-    read(WorkerToBroker[READ], Buffer, numberSent * sizeof(RGBPixel));
-
-    numberSent = 0;
-    write(BrokerToWorker[WRITE], &numberSent, sizeof(size_t));
-
-    exit(EXIT_FAILURE);
-    /*
-    while(PixelsSent < numberPixels){
-        
-        /*----
-        if(PixelsSent + numberSent > numberPixels){
-            numberSent = numberPixels -PixelsSent;
-        }
-
-        getPixels(data, numberSent,PixelsSent, subData);
-        /*----
-        
-        if (PixelsSent + numberSent < numberPixels){
-            if(write(BrokerToWorker[WRITE], &numberSent, sizeof(size_t)) == -1){
-                fprintf(stderr,"Broker: Error al escribir en el pipe\n");
-                exit(EXIT_FAILURE);
-            }
-
-            if(write(BrokerToWorker[WRITE], subData, numberSent * sizeof(RGBPixel)) != numberSent * sizeof(RGBPixel)){
-                fprintf(stderr,"Broker: Error al escribir en el pipe\n");
-                free(subData);
-                exit(EXIT_FAILURE);
-            }
-
-            if(read(WorkerToBroker[READ], Buffer, numberSent * sizeof(RGBPixel)) != numberSent * sizeof(RGBPixel)){
-                fprintf(stderr,"Broker: Error al leer del pipe\n");
-                free(subData);
-                exit(EXIT_FAILURE);
-            }
-
-            putPixels(Buffer, NewData, numberSent, PixelsSent);
-            
-            La gracia de esta funcion es que pase los pixeles que se modificaron al arreglo mas grande.
-            En mayor detalle los pixeles de subData se van a pasar a NewData, pero en la posicion que le corresponde
-            sabiendo cuantos pixeles se van a agregar y cuantos ya se han agregado
-            
-
-
-            PixelsSent += numberSent;
-        }else{    
-            int lastPixels = numberPixels - PixelsSent;
-            if(lastPixels <= 0){
-                size_t size = 0;
-                write(BrokerToWorker[WRITE], &size, sizeof(size_t));
-                break;
-            }
-            RGBPixel LastBuffer[lastPixels];
-            getPixels(data, lastPixels, iterator, subData);
-            if(write(BrokerToWorker[WRITE], subData, lastPixels * sizeof(RGBPixel)) != lastPixels * sizeof(RGBPixel)){
-                fprintf(stderr,"Error al escribir en el pipe\n");
-                exit(EXIT_FAILURE);
-            }
-
-            if(read(WorkerToBroker[READ], LastBuffer, lastPixels * sizeof(RGBPixel)) != lastPixels * sizeof(RGBPixel)){
-                fprintf(stderr,"Error al leer del pipe\n");
-                exit(EXIT_FAILURE);
-            }
-            putPixels(subData, NewData, lastPixels, PixelsSent);
-
-
-            PixelsSent += lastPixels;
-        }
-        if(PixelsSent < numberPixels){
-            if(numberPixels - PixelsSent > 100){
-                getPixels(data, numberSent, iterator, subData); //OJO
-            }
-        }
-        iterator++;
-        
-    }
-    free(subData);*/
-
-    
+ 
     //reIdeacion
     size_t PixelsWaiting = numberPixels;
     int iterator = 1;
@@ -337,3 +245,121 @@ void putPixels(RGBPixel *SubData, RGBPixel *data, int numberPixels, int PixelsRe
     memcpy(data + PixelsReady, SubData, numberPixels * sizeof(RGBPixel));
 }
 
+
+/*
+void sendImages(BMPImage images[], int *pipe, int numImages) {
+    for(int i = 0; i < numImages; i++) {
+        //Enviar ancho y alto de una imagen
+        write(STDOUT_FILENO, &images[i].width, sizeof(int));
+        write(STDOUT_FILENO, &images[i].height, sizeof(int));
+
+        int TotalPixels = images[i].width * images[i].height;
+        int j = 0;
+
+        //Enviar de a 100 pixeles
+        while(j < TotalPixels) {
+            int PixelsToSend = 100;
+            if(j + 100 > TotalPixels) {
+                PixelsToSend = TotalPixels - j;
+            }
+            write(STDOUT_FILENO, &images[i].data[j], PixelsToSend * sizeof(RGBPixel));
+            j+= 100;
+        }
+    }
+    //close(pipe[1]);
+}
+
+
+void sendImages2(BMPImage images[], int numImages){
+    for (int i = 0; i < numImages; i++) {
+        //BMPImage* img = &images[i];
+
+        ssize_t bytes = write(STDOUT_FILENO, &images[i], sizeof(images[i]));
+
+    }
+}
+*/
+
+/*
+
+
+void SendImages(BMPImage *Images, int *fd, int *fd2, int N) {
+    for (int i = 0; i < N; i++) {
+        BMPImage img = Images[i];
+        int width = img.width;
+        int height = img.height;
+
+        // Enviar ancho y alto de la imagen
+        write(fd[WRITE], &width, sizeof(int));
+        write(fd[WRITE], &height, sizeof(int));
+
+        int TotalPixels = width * height;
+        int PixelsSent = 0;
+
+        // Enviar de a 100 píxeles
+        while (PixelsSent < TotalPixels)
+        {
+            size_t numPixels = 100;
+            if (TotalPixels - PixelsSent < 100)
+            {
+                numPixels = TotalPixels - PixelsSent;
+            }
+
+            // Enviar cantidad de píxeles a enviar
+            write(STDOUT_FILENO, &numPixels, sizeof(size_t));
+
+            // Enviar los píxeles
+            write(STDOUT_FILENO, img.data + PixelsSent, numPixels * sizeof(RGBPixel));
+
+            PixelsSent += numPixels;
+
+            // Esperar
+            int done;
+            read(fd2[READ], &done, sizeof(int));
+        }
+
+        // Enviar un 0 para indicar que se terminó de enviar la imagen
+        size_t zero = 0;
+        write(STDOUT_FILENO, &zero, sizeof(size_t));
+    }
+}
+*/
+void SendImages(BMPImage *Images, int *fd, int *fd2, int N)
+{
+    for (int i = 0; i < N; i++)
+    {
+        BMPImage img = Images[i];
+        int width = img.width;
+        int height = img.height;
+
+        // Enviar el ancho y el alto de la imagen
+        write(fd[WRITE], &width, sizeof(int));
+        write(fd[WRITE], &height, sizeof(int));
+
+        int TotalPixels = width * height;
+        int PixelsSent = 0;
+
+        // Enviar de a 100 píxeles
+        while (1)
+        {
+            size_t numPixels = 100;
+            if (TotalPixels - PixelsSent < 100)
+            {
+                numPixels = TotalPixels - PixelsSent;
+            }
+
+            // Enviar la cantidad de píxeles
+            write(STDOUT_FILENO, &numPixels, sizeof(size_t));
+
+            // Enviar los píxeles
+            write(STDOUT_FILENO, img.data + PixelsSent, numPixels * sizeof(RGBPixel));
+
+            PixelsSent += numPixels;
+
+            // Esperar
+            int done;
+            read(fd2[READ], &done, sizeof(int));
+        }
+
+    }
+}

@@ -9,7 +9,9 @@ int main(int argc, char *argv[]){
     char *N = (char *)malloc(50 * sizeof(char));   //Nombre prefijo imagenes(Imagen)
     char fStr[20],WStr[20],uStr[20],pStr[20],vStr[20]; //Strings para convertir los valores a string
 
-    int fd[2]; // File descriptor para el pipe
+    int IngresedN = -1;
+
+    int fd[2], fd2[2]; // File descriptor para el pipe
 
     if (N == NULL || C == NULL || R == NULL) {
         printf("Error en la asignacion de memoria\n");
@@ -37,9 +39,11 @@ int main(int argc, char *argv[]){
                     free(R);
                     return 1;
                 }
-                N = temp;  
+                N = temp;
+                IngresedN = 1;  
             } else {
                 strcpy(N, Prefix); // Asignar el puntero realocado a la variable original
+                IngresedN = 1;
             }
             break;
         case 'f':
@@ -101,7 +105,7 @@ int main(int argc, char *argv[]){
     //Verificar que f sea un valor valido
     /*IMPORTANTE CHEQUEAR Y REVISAR QUE TODAS LAS VARIABLES SEAN VALIDAS, QUE SI ALGUNA NO SE ENTREGA TIRAR ERROR SI NO
     TIENE CASO ESTANDAR*/
-    if((f > 3) || f < 0){
+    if(f != 3 && f != 2 && f != 1){
         printf("Por favor ingrese un valor entero para f entre 1 y 3\n");
         return 0;
     }
@@ -131,8 +135,13 @@ int main(int argc, char *argv[]){
     }
 
     //Verificar que el umbral de clasificación esté dentro de un rango valido
-    if(v > 1 || u < 0) {
+    if(v >= 1 || v < 0) {
         printf("Por favor ingrese un valor entre 0 y 1 para el umbral de clasificación (v)\n");
+        return 0;
+    }
+
+    if(IngresedN == -1){
+        printf("Por favor ingrese el prefijo de las imagenes a trabajar (-N)");
         return 0;
     }
 
@@ -151,24 +160,16 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
+    if(pipe(fd2) == -1) {
+        fprintf(stderr,"pipe");
+        exit(EXIT_FAILURE);
+    }
+
     //Contar imágenes
     int nImages = CountImages(N);
     char StrImages[100];
     sprintf(StrImages, "%d", nImages);
-    //Concatenar .csv a R
-    strcat(R, ".csv");
-    //Creacion archivo CSV
-    FILE *fileCSV;
-    fileCSV = fopen(R, "w"); // Abre el archivo en modo escritura ("w"), se cierra al finalizar el programa
-
-    if (fileCSV == NULL) {
-        printf("Error al abrir el archivo.\n");
-        return 0;
-    }
-
-    //Archivo CSV con 2 columnas
-    fprintf(fileCSV, "Nombre Imagen,Clasificacion\n");
-
+    
     //esto tambien se puede hacer funcion
     sprintf(fStr,"%d",f);
     sprintf(WStr,"%d",W);
@@ -185,7 +186,9 @@ int main(int argc, char *argv[]){
     pid_t pid = fork();
     if(pid == 0) {
         close(fd[READ]);                    // Cerrar el extremo de lectura del pipe
-        dup2(fd[WRITE], STDOUT_FILENO);     // Redirigir la salida estándar al pipe 
+        close(fd2[WRITE]);                  // Cerrar el extremo de escritura del pipe
+        dup2(fd[WRITE], STDOUT_FILENO);     // Redirigir la salida estándar al pipe
+        dup2(fd2[READ], STDIN_FILENO); 
 
         // Intentar usar broker
         if(execv("./broker", (char * const *)argv2) == -1) {
@@ -201,22 +204,38 @@ int main(int argc, char *argv[]){
         }
 
         close(fd[WRITE]); // Cerrar el extremo de escritura del pipe
+        close(fd2[READ]); // Cerrar el extremo de lectura del pipe
         
 
         printf("Proceso hijo %d terminó\n", childPid);
         fflush(stdout);
     }
 
+    /*Lectura de imagenes*/
+
+    
+    BMPImage *NewImages;
+    //ReadImages2(NewImages,fd, fd2,nImages);
+    //printf("%d", NewImages[0].data->r);
+
+    //write_bmp("ImagenFinal1.bmp", &NewImages[0]);
+
     //Contar imagenes
-    int numImages = CountImages(N);
+    //int numImages = CountImages(N);
 
-    //Recibir imagenes
-    BMPImage *Images;
+    //Concatenar .csv a R
+    strcat(R, ".csv");
+    //Creacion archivo CSV
+    FILE *fileCSV;
+    fileCSV = fopen(R, "w"); // Abre el archivo en modo escritura ("w"), se cierra al finalizar el programa
 
-    //Images = receiveImages(fd, numImages);
+    if (fileCSV == NULL) {
+        printf("Error al abrir el archivo.\n");
+        return 0;
+    }
 
-    //printf("Rojo imagen modificada 0: %d\n", Images[0].data[0].r);
-    fflush(stdout);
+    //Archivo CSV con 2 columnas
+    fprintf(fileCSV, "Nombre Imagen,Clasificacion\n");
 
 
     if (N != NULL) {
@@ -232,6 +251,7 @@ int main(int argc, char *argv[]){
         C = NULL; // Evita el uso de punteros colgantes
     }
     
+    fflush(stdout);
 
     fclose(fileCSV);
     printf("Proceso padre terminó\n");

@@ -29,7 +29,7 @@ BMPImage * addImage(BMPImage *Images, int *count, BMPImage newImage);
 
 BMPImage *formatImage(RGBPixel *data, BMPImage *image);
 
-void sendImages(BMPImage *Images, int count);
+//void sendImages(BMPImage *Images, int count);
 
 void freeImages(BMPImage *images, int count);
 
@@ -57,3 +57,9 @@ void workerProcess(int *BrokerToWorker, int *WorkerToBroker, int numberPixels ,R
 void brokerProcess(int *BrokerToWorker, int *WorkerToBroker, int numberPixels, RGBPixel *data, RGBPixel *NewData, char *argv[]);
 
 void putPixels(RGBPixel *SubData, RGBPixel *data, int numberPixels, int PixelsReady);
+
+//void sendImages(BMPImage images[], int *pipe, int numImages);
+
+void sendImages2(BMPImage images[], int numImages);
+
+void SendImages(BMPImage *Images, int *fd, int *fd2, int N);

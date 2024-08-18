@@ -1,7 +1,7 @@
 #include "fworker.h"
 
 /*
-Descripcion: Función que modifica el satura un pixel de una imagen
+Descripcion: Función que satura un pixel de una imagen
 usando un factor de saturación
 Entrada: Factor de saturacion, pixel
 Salida: Pixel saturado
@@ -49,7 +49,7 @@ RGBPixel saturate_pixel(float factor, RGBPixel pixel)
 
 
 /*
-Descripcion: Función que realiza la conersión de un pixel de una
+Descripcion: Función que realiza la conversión de un pixel de una
 imagen a escala de grises
 Entrada: Pixel
 Salida: Pixel en escala de grises
@@ -97,9 +97,14 @@ RGBPixel binarize_pixel(float factor, RGBPixel pixel)
     return new_pixel;
 }
 
+/*
+Descripcion: Función que satura un conjunto de pixeles de una imagen
+usando un factor de saturación
+Entrada: Arreglo de pixeles, cantidad de pixeles y factor de saturacion,
+Salida: Pixel saturado
+*/
 RGBPixel * saturate_pixels(RGBPixel *pixels, int Npixels, float factor)
 {   
-
     RGBPixel *new_pixels = (RGBPixel*)malloc(sizeof(RGBPixel) * Npixels);
     for (int i = 0; i < Npixels; i++)
     {
@@ -108,6 +113,12 @@ RGBPixel * saturate_pixels(RGBPixel *pixels, int Npixels, float factor)
     return new_pixels;
 }
 
+/*
+Descripcion: Función que convierte a escala de grises un conjunto de
+pixeles de una imagen
+Entrada: Arreglo de pixeles y cantidad de pixeles
+Salida: Pixel saturado
+*/
 RGBPixel * grayScale_pixels(RGBPixel *pixels, int Npixels)
 {
     RGBPixel *new_pixels = (RGBPixel*)malloc(sizeof(RGBPixel) * Npixels);
@@ -118,6 +129,12 @@ RGBPixel * grayScale_pixels(RGBPixel *pixels, int Npixels)
     return new_pixels;
 }
 
+/*
+Descripcion: Función que binariza un conjunto de pixeles de una imagen
+usando un umbral de binarización
+Entrada: Arreglo de pixeles, cantidad de pixles y umbral de binarización
+Salida: Pixel saturado
+*/
 RGBPixel * binarize_pixels(RGBPixel *pixels, int Npixels, float factor)
 {
     RGBPixel *new_pixels = (RGBPixel*)malloc(sizeof(RGBPixel) * Npixels);

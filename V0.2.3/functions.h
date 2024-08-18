@@ -27,3 +27,11 @@ int nearly_black(BMPImage* image,float factor); //Clasificacion de imagenes
 BMPImage * receiveImages(int pipe[2], int numImages); //Recibir imagenes
 
 int CountImages(char* prefix); //Contar imagenes
+
+/*--- Lectura de imagenes ---*/
+
+void ReadImages(BMPImage *NewImages,int *fd, int N);
+
+void ReadImages2(BMPImage *NewImages,int *fd, int *fd2, int N);
+
+void ReadImages3(BMPImage *NewImages, int *fd, int *fd2, int N);
