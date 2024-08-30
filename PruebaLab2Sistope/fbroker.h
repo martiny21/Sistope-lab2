@@ -10,13 +10,13 @@
 
 void pixels_per_worker(int alto, int ancho, int W, int *pixels);
 
-void getPixels(RGBPixel *data, int Npixels, int i, RGBPixel *pixels);
+void getPixels(RGBPixel *data, int Npixels, int i, RGBPixel *pixels, int PixelsDefault);
 
 BMPImage processImage(BMPImage *image, int W, char *argv[]);
 
 void processPixels(RGBPixel *data, int totalPixels, int W, int *pixelsPerWorker, RGBPixel *NewData, char *argv[]);
 
-void CreateWorker(RGBPixel *data, int NumberPixels, char *argv[], int iterator, RGBPixel *NewData);
+void CreateWorker(RGBPixel *data, int NumberPixels, char *argv[], int iterator, RGBPixel *NewData, int PixelsDefault);
 
 void workerProcess(int *BrokerToWorker, int *WorkerToBroker, int numberPixels ,RGBPixel *data, RGBPixel *NewData, char *argv[]);
 

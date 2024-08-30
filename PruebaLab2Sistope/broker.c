@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 
         int ancho = image->width;
         int alto = image->height;
-
+        fprintf(stderr,"W :%d\n",W);
         BMPImage NewImage = processImage(image, W, argv);
 
         NewImages[loop - 1] = NewImage;

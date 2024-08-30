@@ -12,7 +12,8 @@ void pixels_per_worker(int alto, int ancho, int W, int *pixels){
     int UltimoWorker = ancho % W;  // Columnas restantes que deben ser asignadas al último worker
 
     pixels[0] = Workers * alto;  // Cantidad de píxeles para todos los workers menos el último
-    pixels[1] = (Workers + UltimoWorker) * alto;  // Píxeles para el último worker que recibe las columnas restantes
+    pixels[1] = fabs(((Workers * alto) * (W-1)) - (alto * ancho));  // Píxeles para el último worker que recibe las columnas restantes
+    fprintf(stderr, "pixles[0]: %d, pixles[1]: %d", pixels[0], pixels[1]);
 }
 
 
@@ -22,9 +23,10 @@ Entrada: arreglo de pixeles, cantidad de pixeles, iterador, arreglo de pixeles n
 Salida: no hay
 Descripcion: funcion que traspasa ciertos pixeles a un arreglo
 */
-void getPixels(RGBPixel *data, int Npixels, int i, RGBPixel *pixels) {
+void getPixels(RGBPixel *data, int Npixels, int i, RGBPixel *pixels, int PixelsDefault) {
+
     for (int j = 0; j < Npixels; j++) {
-        pixels[j] = data[i * Npixels + j];
+        pixels[j] = data[i * PixelsDefault + j];
     }
 }
 
@@ -63,19 +65,19 @@ Descripcion: Cada worker recibe la cantidad de pixeles que le corresponde y los 
 */
 void processPixels(RGBPixel *data, int totalPixels, int W, int *pixelsPerWorker, RGBPixel *NewData, char *argv[]){
     if(W == 1){
-        CreateWorker(data, totalPixels, argv, 0, NewData);
+        CreateWorker(data, totalPixels, argv, 0, NewData,pixelsPerWorker[0]);
         return;
     }
 
     for(int i = 0; i < W; i++){
         if (i == W - 1){
             RGBPixel *SubData = (RGBPixel*)malloc(sizeof(RGBPixel) * pixelsPerWorker[1]);
-            CreateWorker(data,pixelsPerWorker[1], argv, i, SubData);
-            memcpy(NewData + i * pixelsPerWorker[1], SubData, pixelsPerWorker[1] * sizeof(RGBPixel));
+            CreateWorker(data,pixelsPerWorker[1], argv, i, SubData,pixelsPerWorker[0]);
+            memcpy(NewData + i * pixelsPerWorker[0], SubData, pixelsPerWorker[1] * sizeof(RGBPixel));
             free(SubData);
         }else{
             RGBPixel *SubData = (RGBPixel*)malloc(sizeof(RGBPixel) * pixelsPerWorker[0]);
-            CreateWorker(data,pixelsPerWorker[0], argv, i, SubData);
+            CreateWorker(data,pixelsPerWorker[0], argv, i, SubData,pixelsPerWorker[0]);
             memcpy(NewData + i * pixelsPerWorker[0], SubData, pixelsPerWorker[0] * sizeof(RGBPixel));
             free(SubData);
         }
@@ -88,7 +90,7 @@ Entrada: arreglo de pixeles, cantidad de pixeles, argumentos para el worker, ite
 Salida: no hay
 Descripcion: Crea un worker, con sus pipes, y le envia los pixeles que le corresponden
 */
-void CreateWorker(RGBPixel *data, int NumberPixels, char *argv[], int iterator, RGBPixel *NewData){
+void CreateWorker(RGBPixel *data, int NumberPixels, char *argv[], int iterator, RGBPixel *NewData, int PixelsDefault){
     int brokerToWorker[2]; // Pipe del broker al worker
     int workerToBroker[2]; // Pipe del worker al broker
 
@@ -100,7 +102,8 @@ void CreateWorker(RGBPixel *data, int NumberPixels, char *argv[], int iterator, 
         fprintf(stderr, "Error al asignar memoria\n");
         exit(EXIT_FAILURE);
     }
-    getPixels(data, NumberPixels, iterator, SubData);
+
+    getPixels(data, NumberPixels, iterator, SubData,PixelsDefault);
 
 
     // Crear pipes
@@ -175,7 +178,7 @@ void brokerProcess(int *BrokerToWorker, int *WorkerToBroker, int numberPixels, R
         fprintf(stderr, "Error al asignar memoria\n");
         exit(EXIT_FAILURE);
     }
-    getPixels(data, numberSent, 0, subData);
+    getPixels(data, numberSent, 0, subData,numberSent);
 
     RGBPixel Buffer[numberSent];
  
@@ -188,15 +191,29 @@ void brokerProcess(int *BrokerToWorker, int *WorkerToBroker, int numberPixels, R
         read(WorkerToBroker[READ], Buffer, numberSent * sizeof(RGBPixel));
         putPixels(Buffer, NewData, numberSent, PixelsSent);
         
+       
+
         PixelsWaiting -= numberSent;
         PixelsSent += (int)numberSent;
-        if(PixelsWaiting < 100){
+
+        if(PixelsWaiting < 100 && PixelsWaiting != 0){
             break;
+        } else if (PixelsWaiting == 0)
+        {
+            numberSent = 0;
+            write(BrokerToWorker[WRITE], &numberSent, sizeof(size_t));
+
+            free(subData);
+            close(BrokerToWorker[WRITE]); // Cerrar el extremo de escritura en brokerToWorker
+            close(WorkerToBroker[0]); // Cerrar el extremo de lectura en workerToBroker
+            return;
+
         }
-        getPixels(data, numberSent, iterator, subData);
+
+        getPixels(data, numberSent, iterator, subData,numberSent);
         iterator++;
     }
-    
+    getPixels(data, PixelsWaiting, iterator, subData,numberSent);
     write(BrokerToWorker[WRITE], &PixelsWaiting, sizeof(size_t));
     write(BrokerToWorker[WRITE], subData, PixelsWaiting * sizeof(RGBPixel));
     read(WorkerToBroker[READ], Buffer, PixelsWaiting * sizeof(RGBPixel));
